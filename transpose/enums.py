@@ -25,7 +25,7 @@ class Enum:
         """
         Merges enumees with the same value so the reverse lookup will return PREFIX_VAL1_OR_VAL2 where prefix is
         a common prefix of val1 and val2 and VAL1, VAL2 are val1,val2 without the prefix.
-        :return: dictionary of dictionaries such that [enum_name][enumee_merged_name] = enumees associated with it
+        :return: dictionary such that [enumee_merged_name] = one enumee associated with it
         :rtype: dict
         """
         reverse_enumees = {}
