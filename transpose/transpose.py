@@ -1,28 +1,8 @@
 #! /usr/bin/env python
 import argparse
 from dataclasses import dataclass
-import re
-
-
-def comment_remover(text: str):
-    """
-    removes C/C++ comments and empty lines from text
-    :param text: text associated to C/C++ code
-    :return: code with comments removed
-    :rtype: str
-    """
-    def replacer(match):
-        s = match.group(0)
-        if s.startswith('/'):
-            return " "
-        else:
-            return s
-    pattern = re.compile(
-        r'//.*?$|/\*.*?\*/|\'(?:\\.|[^\\\'])*\'|"(?:\\.|[^\\"])*"',
-        re.DOTALL | re.MULTILINE
-    )
-    text = re.sub(pattern, replacer, text)
-    return '\n'.join([line for line in text.splitlines() if line.strip() != ''])
+from pyclibrary import CParser
+from os.path import commonprefix
 
 
 def create_macro(macro_name_prefix: str, macro_values: list):
@@ -40,7 +20,7 @@ def create_macro(macro_name_prefix: str, macro_values: list):
     max_length = max([len(value)+1 for value in macro_values])
     max_length = max(max_length, len('Unknown') + 1)
     define_max_length = f"#define {macro_name_prefix.upper()}_MAX_LEN {max_length}"
-    macro = f"""#define {macro_name_prefix.upper()}_PARSER (n, buf) do {{
+    macro = f"""#define {macro_name_prefix.upper()}_PARSER(n, buf) do {{
     switch(n) {{"""
     for value in macro_values:
         macro += f"""
@@ -52,77 +32,24 @@ def create_macro(macro_name_prefix: str, macro_values: list):
             strcpy(buf, \"Unknown\");
             break;
     }
-} while (0)"""
+} while (0);"""
     final_macro = '\n'.join([line + '\\' for line in macro.splitlines()[:-1]])
     final_macro += '\n' + macro.splitlines()[-1]
     return define_max_length + '\n' + final_macro
 
 
-def extract_enums(text: str):
-    """ NOT TESTED
-    finds all enums declared in code text, and their name/typedef if available (otherwise the first value is taken for the name)
-    :param text: C code
+def extract_enums(parser: CParser):
+    """
+    finds all enums declared in code text, and their name
+    :param parser: CParser of the header
     :return: dictionary of [enum_name]=list of (names of ) values
     :rtype: dict
     """
-    all_enums = dict()
-    lines = text.splitlines()
-    for i in range(len(lines)):
-        if 'enum' in lines[i]:
-            enum = list()
-            start_line = None
-            end_line = None
-            for j in range(i, len(lines)):
-                if '{' in lines[j]:
-                    start_line = j
-                if '}' in lines[j]:
-                    end_line = j
-            if start_line is None or end_line is None or start_line > end_line:
-                raise Exception()
-            if 'typedef' in lines[i]:
-                current_line = lines[end_line]
-                current_line.strip('};')
-                current_line = current_line.strip()
-                if current_line == "":
-                    print(f"resulting enum name is empty, original line: {lines[end_line]}")
-                    raise Exception()
-                if current_line.count(' ') != 0:
-                    print("enum name found includes spaces, replacing with _")
-                    current_line.replace(' ', '_')
-                enum_name = current_line
-            else:
-                current_line = lines[i]
-                current_line = current_line.replace('{', '')
-                current_line = current_line.replace('enum', '')
-                current_line = current_line.replace('typedef', '')
-                current_line = current_line.strip()
-                if current_line == "":
-                    print(f"resulting enum name is empty, original line: {lines[end_line]}")
-                    raise Exception()
-                if current_line.count(' ') != 0:
-                    print("enum name found includes spaces, replacing with _")
-                    current_line.replace(' ', '_')
-                enum_name = current_line
-            for j in range(start_line, end_line + 1):
-                current_line = lines[j]
-                current_line = current_line.strip()
-                if '{' in current_line:
-                    index = current_line.index('{')
-                    current_line = current_line[index+1:]
-                elif '}' in current_line:
-                    index = current_line.index('}')
-                    current_line = current_line[:index]
-
-                current_line = current_line.strip('{,};')
-                if '=' in current_line:
-                    enum.append(current_line.split('=')[0])
-                else:
-                    enum.append(current_line)
-            if enum_name == "":
-                print("could not find enum name, using first entry instead")
-                enum_name = enum[0]
-            all_enums[enum_name] = enum
-    return all_enums
+    enums = parser.defs['enums']
+    extracted = {}
+    for enum in enums:
+        extracted[enum] = list(enums[enum].keys())
+    return extracted
 
 
 def strip_underscore(st: str):
@@ -133,6 +60,7 @@ def strip_underscore(st: str):
     :rtype: str
     """
     return st[:st.rindex('_')]
+
 
 @dataclass
 class Define:
@@ -228,34 +156,15 @@ def find_prefixes(defines: list):
     return prefixes_count, no_prefix
 
 
-def is_macro(line: str):
+def extract_defines(parser: CParser):
     """
-    Try to check if line is constant of macro
-    :param line:
-    :return: True if line contains one of '\','(',')'
-    :rtype: bool
-    """
-    return '\\' in line or '(' in line or ')' in line
-
-
-def extract_defines(text: str):
-    """
-    Extracts and parses, single line defines. There is no good check whether the define is a macro or a constant
-    :param text: code
+    Extracts defines and groups them by prefix.
+    :param parser: CParser of the header
     :return: dictionary where [prefix: str] = list of Define's with prefixed names after merging,
              and list of Define's without a sensible prefix
     :rtype: tuple(dict, list)
     """
-    lines = [line for line in text.splitlines() if '#define' in line and not is_macro(line)]
-    lines = [line.replace('#define', '') for line in lines]
-    lines = [' '.join(line.split()) for line in lines]
-    defines = []
-    for line in lines:
-        try:
-            i = line.index(' ')
-            defines.append(Define(line[:i], line[i+1:]))
-        except ValueError:
-            pass
+    defines = [Define(name, value) for name, value in parser.defs['macros'].items()]
     prefixes, no_prefix = find_prefixes(defines)
     prefixes = merge_prefixes(prefixes)
     return prefixes, no_prefix
@@ -269,8 +178,9 @@ def create_output(orig_path: str, enum_macros: list, define_macros: list):
     :param define_macros: list of macros associated with extracted define's
     :return: header file with includes to the original header and string.h and all the macros created.
     """
-    header = f'#include <string.h>\n#include "{orig_path}"\n'
+    header = f'#pragma once\n#include <string.h>\n#include "{orig_path}"\n\n\n'
     header += '\n\n\n'.join(enum_macros)
+    header += '\n\n\n'
     header += '\n\n\n'.join(define_macros)
     return header
 
@@ -282,15 +192,14 @@ def main(path: str, out_path: str, basename=True):
     :param out_path: path in which the generated header will be created
     :param basename: if True, the generated header with use #include "`basename path`" instead of the original one
     """
-    with open(path, 'r') as fd:
-        text = fd.read()
-    text = comment_remover(text)
+    parser = CParser([path])
     enum_macros = []
     define_macros = []
-    enums = extract_enums(text)
+
+    enums = extract_enums(parser)
     for enum_name in enums:
         enum_macros.append(create_macro(enum_name, enums[enum_name]))
-    prefixes, no_prefix = extract_defines(text)
+    prefixes, no_prefix = extract_defines(parser)
     for prefix in prefixes:
         define_macros.append(create_macro(prefix, [define.name for define in prefixes[prefix]]))
     define_macros.append(create_macro("_DEFAULT", [define.name for define in no_prefix]))
@@ -301,15 +210,3 @@ def main(path: str, out_path: str, basename=True):
     output = create_output(path, enum_macros, define_macros)
     with open(out_path, 'w') as fd:
         fd.write(output)
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Create macros to reverse enums and defines from header file')
-    parser.add_argument('in_file', help='input file')
-    parser.add_argument('out_file', help='output file')
-    parser.add_argument('--no-basename', dest='basename', action='store_false',
-                        help='include full path to input instead of basename')
-    parser.set_defaults(basename=True)
-    args = parser.parse_args()
-    main(args.in_file, args.out_file, args.basename)
-

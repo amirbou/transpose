@@ -1,10 +1,6 @@
 #! /usr/bin/env python
 import pytest
-from main import *
-
-
-def test_extract_enums():
-    pass
+from transpose import *
 
 
 def test_find_prefixes():
@@ -105,8 +101,5 @@ def test_merge_prefixes_collisions():
     prefixes = merge_prefixes(subject)
     assert sorted(list(prefixes.keys())) == sorted(['PF', 'STB', 'SHF', 'SHF_INFO'])
 
-
-if __name__ == '__main__':
-    pytest.main()
 
 
