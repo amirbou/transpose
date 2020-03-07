@@ -10,8 +10,8 @@ int main(void)
     printf("LOG_VERBOSE=%s\n", buf);
     
     char buf2[LOG_ID_MAX_LEN] = { 0 };
-    LOG_ID_PARSER(LOG_ID_CRASH, buf2);
-    printf("LOG_ID_CRASH=%s\n", buf2);
+    LOG_ID_PARSER(LOG_ID_MIN, buf2);
+    printf("LOG_ID_MIN=%s    (expected LOG_ID_MIN_OF_MAIN)\n", buf2);
 
     char buf3[DF_MAX_LEN] = { 0 };
     DF_PARSER(DF_BIND_NOW, buf3);
