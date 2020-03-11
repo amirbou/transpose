@@ -19,14 +19,24 @@ def create_output(orig_path: str, enum_macros: list, define_macros: list):
     return header
 
 
-def main(path: str, out_path: str, basename=True):
+def main(path: str, out_path: str, macros: list, basename=True):
     """
     Parses the header file in path and outputs header file of macros to out_path
     :param path: path of header to create macros for
     :param out_path: path in which the generated header will be created
+    :param macros: list of macros to pass to the header parser (i.e DEBUG=True)
     :param basename: if True, the generated header with use #include "`basename path`" instead of the original one
     """
-    parser = CParser([path])
+    macros_dict = dict()
+    for macro in macros:
+        if macro.count('=') == 1:
+            key, value = macro.split('=')
+            macros_dict[key] = value
+        elif macro.count('=') == 0:
+            macros_dict[macro] = ''
+        else:
+            raise ValueError('macros must comply to the gcc -D argument format')
+    parser = CParser([path], macros=macros_dict)
     enum_macros = create_enum_macros(parser)
     define_macros = create_define_macros(parser)
 

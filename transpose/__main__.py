@@ -1,9 +1,6 @@
 import argparse
 from .transpose import main
 
-__version__ = '0.0.1'
-__author__ = 'amirbou'
-
 
 def _main():
     parser = argparse.ArgumentParser(prog='transpose', description='Create macros to reverse enums and defines from header file')
@@ -11,9 +8,10 @@ def _main():
     parser.add_argument('out_file', help='output file')
     parser.add_argument('--no-basename', dest='basename', action='store_false',
                         help='include full path to input instead of basename')
+    parser.add_argument('-D', action='append', help='pass macros, as in gcc, for the preproceccor (i.e -D DEBUG)')
     parser.set_defaults(basename=True)
     args = parser.parse_args()
-    main(args.in_file, args.out_file, args.basename)
+    main(args.in_file, args.out_file, args.D, args.basename)
 
 
 if __name__ == '__main__':
