@@ -147,6 +147,8 @@ def create_define_macros(parser: CParser):
     :rtype: list
     """
     defines = list()
+
+    # TODO: Fix this to handle things like (1 + 1)
     for name, value in parser.defs['macros'].items():
         try:
             defines.append(Define(name, value))

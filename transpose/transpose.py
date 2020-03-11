@@ -27,6 +27,7 @@ def main(path: str, out_path: str, macros: list, basename=True):
     :param macros: list of macros to pass to the header parser (i.e DEBUG=True)
     :param basename: if True, the generated header with use #include "`basename path`" instead of the original one
     """
+    # TODO: Fix this to handle things like # define BASE 0 and #define SOMETHING (BASE + 32) by recursively parsing included headers
     macros_dict = dict()
     for macro in macros:
         if macro.count('=') == 1:
