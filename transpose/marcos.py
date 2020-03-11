@@ -52,24 +52,24 @@ class Define:
     values are use to try and merge lists of Define's to minimize resulting code
     """
     name: str
-    value: str
+    value: int
+
+    def __init__(self, name, value):
+        """
+        casts value from string to integer, might throw ValueError
+        """
+        self.name = name
+        self.value = int(value, 0)
 
     def __eq__(self, other):
         """
-        compares two Defines by value, if both values are integers, their numerical value is compared
+        compares two Defines by value.
         :param other: other Define
         :return: True iff self and other have the same value
         :rtype: bool
         """
         if self.value == other.value:
             return True
-        try:
-            if int(self.value, 0) == int(other.value, 0):
-                return True
-        except ValueError:
-            pass
-        finally:
-            return False
 
 
 def merge_prefixes(prefixes_dict: dict):
@@ -146,7 +146,12 @@ def create_define_macros(parser: CParser):
     :return: list of created macros
     :rtype: list
     """
-    defines = [Define(name, value) for name, value in parser.defs['macros'].items()]
+    defines = list()
+    for name, value in parser.defs['macros'].items():
+        try:
+            defines.append(Define(name, value))
+        except ValueError:
+            pass
     prefixes, no_prefix = find_prefixes(defines)
     prefixes = merge_prefixes(prefixes)
     macros = []
