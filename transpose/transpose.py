@@ -2,6 +2,7 @@
 from pyclibrary import CParser
 from .enums import create_enum_macros
 from .marcos import create_define_macros
+from .arithmatic_parser import *
 
 
 def create_output(orig_path: str, enum_macros: list, define_macros: list):
@@ -27,17 +28,36 @@ def main(path: str, out_path: str, macros: list, basename=True):
     :param macros: list of macros to pass to the header parser (i.e DEBUG=True)
     :param basename: if True, the generated header with use #include "`basename path`" instead of the original one
     """
-    # TODO: Fix this to handle things like # define BASE 0 and #define SOMETHING (BASE + 32) by recursively parsing included headers
+    # TODO: recursively parse headers
     macros_dict = dict()
-    for macro in macros:
-        if macro.count('=') == 1:
-            key, value = macro.split('=')
-            macros_dict[key] = value
-        elif macro.count('=') == 0:
-            macros_dict[macro] = ''
-        else:
-            raise ValueError('macros must comply to the gcc -D argument format')
+    if macros:
+        for macro in macros:
+            if macro.count('=') == 1:
+                key, value = macro.split('=')
+                macros_dict[key] = value
+            elif macro.count('=') == 0:
+                macros_dict[macro] = ''
+            else:
+                raise ValueError('macros must comply to the gcc -D argument format')
     parser = CParser([path], macros=macros_dict)
+    values_changed = True
+    arithmetic_parser = MacrosArithmeticParser()
+    while values_changed:
+        values_changed = False
+        for name, value in parser.defs['macros'].items():
+            new_value = parser.defs['values'].get(name, None)
+            if new_value is None and not isinstance(value, (int, float)):
+                try:
+                    result = arithmetic_parser.parse(value)
+                    new_value = result.evaluate()
+                except Exception as e:
+                    print(e)
+                    continue
+            if new_value is not None and new_value != value:
+                parser.defs['macros'][name] = new_value
+                values_changed = True
+                arithmetic_parser.add_variables({name: new_value, })
+
     enum_macros = create_enum_macros(parser)
     define_macros = create_define_macros(parser)
 
