@@ -1,5 +1,6 @@
-from plusminus import ArithmeticParser, ArithmeticParseException
+from plusminus import ArithmeticParser
 from plusminus.plusminus import LiteralNode
+
 
 # TODO: write tests for all this shit, maybe break up main a little
 class MacrosArithmeticParser(ArithmeticParser):

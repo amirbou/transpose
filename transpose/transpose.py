@@ -3,6 +3,7 @@ from pyclibrary import CParser
 from .enums import create_enum_macros
 from .marcos import create_define_macros
 from .arithmatic_parser import *
+import traceback
 
 
 def create_output(orig_path: str, enum_macros: list, define_macros: list):
@@ -18,6 +19,33 @@ def create_output(orig_path: str, enum_macros: list, define_macros: list):
     header += '\n\n\n'
     header += '\n\n\n'.join(define_macros)
     return header
+
+
+def parse_macros_values(macros: dict):
+    """
+    Arithmetically parse the values of integral (and floating point) macros, in order to help creating a one to one
+    mapping from values to names
+    :param macros: dictionary of unparsed macros
+    :return: the dictionary macros, after parsing the values (in place)
+    :rtype: dict
+    """
+    values_changed = True
+    arithmetic_parser = MacrosArithmeticParser()
+    while values_changed:
+        values_changed = False
+        for name, value in macros.items():
+            new_value = None
+            if not isinstance(value, (int, float)):
+                try:
+                    result = arithmetic_parser.parse(value)
+                    new_value = result.evaluate()
+                except NameError:
+                    continue
+            if new_value is not None and new_value != value:
+                macros[name] = new_value
+                values_changed = True
+                arithmetic_parser.add_variables({name: new_value, })
+    return macros
 
 
 def main(path: str, out_path: str, macros: list, basename=True):
@@ -40,23 +68,7 @@ def main(path: str, out_path: str, macros: list, basename=True):
             else:
                 raise ValueError('macros must comply to the gcc -D argument format')
     parser = CParser([path], macros=macros_dict)
-    values_changed = True
-    arithmetic_parser = MacrosArithmeticParser()
-    while values_changed:
-        values_changed = False
-        for name, value in parser.defs['macros'].items():
-            new_value = parser.defs['values'].get(name, None)
-            if new_value is None and not isinstance(value, (int, float)):
-                try:
-                    result = arithmetic_parser.parse(value)
-                    new_value = result.evaluate()
-                except Exception as e:
-                    print(e)
-                    continue
-            if new_value is not None and new_value != value:
-                parser.defs['macros'][name] = new_value
-                values_changed = True
-                arithmetic_parser.add_variables({name: new_value, })
+    parse_macros_values(parser.defs['macros'])
 
     enum_macros = create_enum_macros(parser)
     define_macros = create_define_macros(parser)

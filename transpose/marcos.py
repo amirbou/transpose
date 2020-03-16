@@ -155,7 +155,7 @@ def create_define_macros(parser: CParser):
     for name, value in parser.defs['macros'].items():
         try:
             defines.append(Define(name, value))
-        except ValueError:
+        except (ValueError, TypeError):
             pass
     prefixes, no_prefix = find_prefixes(defines)
     prefixes = merge_prefixes(prefixes)

@@ -9,5 +9,8 @@ setup(
             'transpose = transpose.__main__:_main'
         ]
     },
-    author='amirbou', install_requires=['pyclibrary', 'plusminus']
+    author='amirbou',
+    install_requires=['pyclibrary',
+                      'plusminus',
+                      ]
 )
