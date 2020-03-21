@@ -45,6 +45,7 @@ def strip_underscore(st: str):
     return st[:st.rindex('_')]
 
 
+# TODO: Handle floats
 @dataclass
 class Define:
     """
@@ -59,7 +60,10 @@ class Define:
         casts value from string to integer, might throw ValueError
         """
         self.name = name
-        self.value = int(value, 0)
+        if isinstance(value, int):
+            self.value = value
+        else:
+            self.value = int(value, 0)
 
     def __eq__(self, other):
         """
@@ -148,11 +152,10 @@ def create_define_macros(parser: CParser):
     """
     defines = list()
 
-    # TODO: Fix this to handle things like (1 + 1)
     for name, value in parser.defs['macros'].items():
         try:
             defines.append(Define(name, value))
-        except ValueError:
+        except (ValueError, TypeError):
             pass
     prefixes, no_prefix = find_prefixes(defines)
     prefixes = merge_prefixes(prefixes)

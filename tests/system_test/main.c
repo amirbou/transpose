@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #include "test.h"
-#include "expected_result.h"
+#include "result.h"
 
 int main(void)
 {
@@ -11,7 +11,7 @@ int main(void)
     
     char buf2[LOG_ID_MAX_LEN] = { 0 };
     LOG_ID_PARSER(LOG_ID_MIN, buf2);
-    printf("LOG_ID_MIN=%s    (expected LOG_ID_MIN_OF_MAIN)\n", buf2);
+    printf("LOG_ID_MIN=%s    (expected LOG_ID_MIN_OR_MAIN)\n", buf2);
 
     char buf3[DF_MAX_LEN] = { 0 };
     DF_PARSER(DF_BIND_NOW, buf3);
