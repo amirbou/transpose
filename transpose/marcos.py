@@ -60,7 +60,7 @@ class Define:
         casts value from string to integer, might throw ValueError
         """
         self.name = name
-        if isinstance(value, int):
+        if isinstance(value, (int, float)):
             self.value = value
         else:
             self.value = int(value, 0)
@@ -135,6 +135,9 @@ def find_prefixes(defines: list):
                 try:
                     new_prefix = strip_underscore(prefix)
                     if new_prefix in prefixes_count.keys():
+                        for define in prefixes_count[new_prefix]:  # check there are no two defines with the same value
+                            if define == orig_key:
+                                raise ValueError
                         prefixes_count[new_prefix].append(orig_key)
                     else:
                         prefixes_count[new_prefix] = orig_keys
