@@ -19,3 +19,6 @@ class MacrosArithmeticParser(ArithmeticParser):
             self._variable_map = formatted_dict
         else:
             self._variable_map.update(formatted_dict)
+
+    def customize(self):
+        self.add_operator('0x', 1, ArithmeticParser.RIGHT, lambda a: int(a, 16))

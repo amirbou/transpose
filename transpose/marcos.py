@@ -146,6 +146,32 @@ def find_prefixes(defines: list):
     return prefixes_count, no_prefix
 
 
+def split_default_parser(defines: list):
+    """
+    Split the defines without a prefix to different parsers, to preserve one to one correspondents
+    :param defines: list of Define's that hadn't fit in one of the specific parsers
+    :return: list of lists of uniquely valued defines
+    """
+    split_parsers = list()
+    for define in defines:
+        if not split_parsers:  # initialize
+            split_parsers.append([define, ])
+            continue
+        added = False
+        for parser in split_parsers:
+            can_add = True
+            for inserted_define in parser:
+                if define == inserted_define:
+                    can_add = False
+                    break
+            if can_add:
+                added = True
+                parser.append(define)
+        if not added:
+            split_parsers.append([define, ])
+    return split_parsers
+
+
 def create_define_macros(parser: CParser):
     """
     Extracts defines, groups them by prefix, and creates matching macros.
@@ -165,7 +191,12 @@ def create_define_macros(parser: CParser):
     macros = []
     for prefix in prefixes:
         macros.append(create_macro(prefix, [define.name for define in prefixes[prefix]]))
-    macros.append(create_macro("_DEFAULT", [define.name for define in no_prefix]))
 
+    split_default_parsers = split_default_parser(no_prefix)
+    if len(split_default_parsers) == 1:
+        macros.append(create_macro(f'_DEFAULT', [define.name for define in no_prefix]))
+    else:
+        for i in range(len(split_default_parsers)):
+            macros.append(create_macro(f'_DEFAULT_{i}', [define.name for define in split_default_parsers[i]]))
     return macros
 

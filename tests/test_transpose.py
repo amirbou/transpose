@@ -37,3 +37,4 @@ def test_in_c(tmpdir):
     with open(os.path.join(SYSTEM_TEST_PATH, 'expected_from_c'), 'r') as fd:
         expected = fd.read()
     assert result == expected
+
