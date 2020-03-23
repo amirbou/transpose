@@ -2,6 +2,7 @@ from transpose import *
 import os
 import subprocess
 import shutil
+import sys
 
 SYSTEM_TEST_PATH = os.path.join('tests', 'system_test')
 
@@ -25,6 +26,8 @@ def test_main():
     transposed = do_transpose(os.path.join(SYSTEM_TEST_PATH, 'test.h'))
     with open(os.path.join(SYSTEM_TEST_PATH, 'expected_result.h'), 'r') as reader:
         expected_result = reader.read()
+    with open('/tmp/transposed_debug.h', 'w') as writer:
+        writer.write(transposed)
     assert transposed == expected_result
 
 
@@ -32,8 +35,14 @@ def test_in_c(tmpdir):
     main(os.path.join(SYSTEM_TEST_PATH, 'test.h'), tmpdir / 'result.h', [])
     shutil.copyfile(os.path.join(SYSTEM_TEST_PATH, 'test.h'), tmpdir / 'test.h')
     shutil.copyfile(os.path.join(SYSTEM_TEST_PATH, 'main.c'), tmpdir / 'main.c')
-    compile_c(tmpdir / 'main.c', tmpdir / 'test.out')
-    result = run_binary(tmpdir / 'test.out').decode('utf-8')
+    result = ""
+    try:
+        compile_c(tmpdir / 'main.c', tmpdir / 'test.out')
+        result = run_binary(tmpdir / 'test.out').decode('utf-8')
+    except subprocess.CalledProcessError as e:
+        print(e.stderr, file=sys.stderr)
+        print(e.stdout)
+    assert result
     with open(os.path.join(SYSTEM_TEST_PATH, 'expected_from_c'), 'r') as fd:
         expected = fd.read()
     assert result == expected

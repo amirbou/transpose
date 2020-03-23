@@ -3,7 +3,7 @@ import pytest
 from transpose import *
 
 
-def test_megre_enumee():
+def test_merge_enumee():
     enumees = [
         Enumee('LOG_ID_MIN', 0),
         Enumee('LOG_ID_MAIN', 0),
@@ -16,7 +16,7 @@ def test_megre_enumee():
         Enumee('LOG_ID_KERNEL', 7),
         Enumee('LOG_ID_MAX', 8)
     ]
-    enum = Enum('LOG_ID', enumees)
+    enum = MacroCreator('LOG_ID', enumees)
     expected_result = {
         'LOG_ID_MIN_OR_MAIN': Enumee('LOG_ID_MIN', 0),
         'LOG_ID_RADIO': Enumee('LOG_ID_RADIO', 1),
@@ -28,7 +28,7 @@ def test_megre_enumee():
         'LOG_ID_KERNEL': Enumee('LOG_ID_KERNEL', 7),
         'LOG_ID_MAX': Enumee('LOG_ID_MAX', 8)
     }
-    assert enum._merge_enumees() == expected_result
+    assert enum._merge_cdefs() == expected_result
 
 
 

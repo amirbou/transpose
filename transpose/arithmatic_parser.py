@@ -1,5 +1,8 @@
 from plusminus import ArithmeticParser
-from plusminus.plusminus import LiteralNode
+try:
+    from plusminus import LiteralNode
+except ImportError:
+    from plusminus.plusminus import LiteralNode
 
 
 # TODO: write tests for all this shit, maybe break up main a little
