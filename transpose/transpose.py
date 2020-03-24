@@ -3,7 +3,7 @@ from pyclibrary import CParser
 from .enums import create_enum_macros
 from .marcos import create_define_macros
 from .arithmatic_parser import *
-import traceback
+import re
 
 
 def create_output(orig_path: str, enum_macros: list, define_macros: list):
@@ -26,7 +26,7 @@ def parse_macros_values(macros: dict):
     Arithmetically parse the values of integral (and floating point) macros, in order to help creating a one to one
     mapping from values to names
     :param macros: dictionary of unparsed macros
-    :return: the dictionary macros, after parsing the values (in place)
+    :return: the macros dictionary, after parsing the values (in place)
     :rtype: dict
     """
     values_changed = True
@@ -46,6 +46,19 @@ def parse_macros_values(macros: dict):
                 values_changed = True
                 arithmetic_parser.add_variables({name: new_value, })
     return macros
+
+
+def hack_fix_hex_values(macros: dict):
+    """
+    iterate through macros and replace hex values from "0xabc" to "0x'abc'".
+    this is a dirty hack so the arithmetic parser for the 0x operator created will receive the number unparsed,
+    because the default numbers parser is evaluating 'a1' to 0
+    :param macros: dictionary of macros
+    :return: the macros dictionary, after replacing the values (in place)
+    :rtype: dict
+    """
+    for name, value in macros.items():
+        macros[name] = re.sub(r"0[xX]([0-9a-fA-F]+)", r"0x'\1'", value)
 
 
 def main(path: str, out_path: str, macros: list, basename=True):
@@ -68,6 +81,7 @@ def main(path: str, out_path: str, macros: list, basename=True):
             else:
                 raise ValueError('macros must comply to the gcc -D argument format')
     parser = CParser([path], macros=macros_dict)
+    hack_fix_hex_values(parser.defs['macros'])
     parse_macros_values(parser.defs['macros'])
 
     enum_macros = create_enum_macros(parser)

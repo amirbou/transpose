@@ -1,38 +1,5 @@
-from dataclasses import dataclass
 from pyclibrary import CParser
-
-
-def create_macro(macro_name_prefix: str, macro_values: list):
-    """
-    creates 2 C macros:
-        macro_name_prefix_MAX_LEN - holding the max length of the names returned
-        macro_name_prefix_PARSER  - macro receiving a value and a buffer, that copies the name of the value to the buffer
-    :param macro_name_prefix: prefix of the macros that will be created
-    :param macro_values: list of the defines/enumees associated with the macro
-    :return: string defining the macros
-    :rtype: str
-    """
-    if macro_values is None or len(macro_values) == 0:
-        return ""
-    max_length = max([len(value)+1 for value in macro_values])
-    max_length = max(max_length, len('Unknown') + 1)
-    max_length_macro = f"#define {macro_name_prefix.upper()}_MAX_LEN {max_length}"
-    macro = f"""#define {macro_name_prefix.upper()}_PARSER(n, buf) do {{
-    switch(n) {{"""
-    for value in macro_values:
-        macro += f"""
-    case {value}:
-            strcpy(buf, \"{value}\");
-            break;"""
-    macro += """
-    default:
-            strcpy(buf, \"Unknown\");
-            break;
-    }
-} while (0);"""
-    final_macro = '\n'.join([line + '\\' for line in macro.splitlines()[:-1]])
-    final_macro += '\n' + macro.splitlines()[-1]
-    return max_length_macro + '\n' + final_macro
+from .macro_creator import MacroCreator, Define
 
 
 def strip_underscore(st: str):
@@ -43,37 +10,6 @@ def strip_underscore(st: str):
     :rtype: str
     """
     return st[:st.rindex('_')]
-
-
-# TODO: Handle floats
-@dataclass
-class Define:
-    """
-    class holding name and values extracted from #define
-    values are use to try and merge lists of Define's to minimize resulting code
-    """
-    name: str
-    value: int
-
-    def __init__(self, name, value):
-        """
-        casts value from string to integer, might throw ValueError
-        """
-        self.name = name
-        if isinstance(value, (int, float)):
-            self.value = value
-        else:
-            self.value = int(value, 0)
-
-    def __eq__(self, other):
-        """
-        compares two Defines by value.
-        :param other: other Define
-        :return: True iff self and other have the same value
-        :rtype: bool
-        """
-        if self.value == other.value:
-            return True
 
 
 def merge_prefixes(prefixes_dict: dict):
@@ -135,15 +71,38 @@ def find_prefixes(defines: list):
                 try:
                     new_prefix = strip_underscore(prefix)
                     if new_prefix in prefixes_count.keys():
-                        for define in prefixes_count[new_prefix]:  # check there are no two defines with the same value
-                            if define == orig_key:
-                                raise ValueError
                         prefixes_count[new_prefix].append(orig_key)
                     else:
                         prefixes_count[new_prefix] = orig_keys
                 except ValueError:  # we removed all _ from strings and
                     no_prefix.append(orig_key)
     return prefixes_count, no_prefix
+
+
+def split_default_parser(defines: list):
+    """
+    Split the defines without a prefix to different parsers, to preserve one to one correspondents
+    :param defines: list of Define's that hadn't fit in one of the specific parsers
+    :return: list of lists of uniquely valued defines
+    """
+    split_parsers = list()
+    for define in defines:
+        if not split_parsers:  # initialize
+            split_parsers.append([define, ])
+            continue
+        added = False
+        for parser in split_parsers:
+            can_add = True
+            for inserted_define in parser:
+                if define.value == inserted_define.value:
+                    can_add = False
+                    break
+            if can_add:
+                added = True
+                parser.append(define)
+        if not added:
+            split_parsers.append([define, ])
+    return split_parsers
 
 
 def create_define_macros(parser: CParser):
@@ -164,8 +123,13 @@ def create_define_macros(parser: CParser):
     prefixes = merge_prefixes(prefixes)
     macros = []
     for prefix in prefixes:
-        macros.append(create_macro(prefix, [define.name for define in prefixes[prefix]]))
-    macros.append(create_macro("_DEFAULT", [define.name for define in no_prefix]))
+        macros.append(MacroCreator(prefix, prefixes[prefix]).create_macro())
 
+    split_default_parsers = split_default_parser(no_prefix)
+    if len(split_default_parsers) == 1:
+        macros.append(MacroCreator(f'_DEFAULT', no_prefix).create_macro())
+    else:
+        for i in range(len(split_default_parsers)):
+            macros.append(MacroCreator(f'_DEFAULT_{i}', split_default_parsers[i]).create_macro())
     return macros
 

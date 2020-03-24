@@ -1,5 +1,8 @@
 from plusminus import ArithmeticParser
-from plusminus.plusminus import LiteralNode
+try:
+    from plusminus import LiteralNode
+except ImportError:
+    from plusminus.plusminus import LiteralNode
 
 
 # TODO: write tests for all this shit, maybe break up main a little
@@ -19,3 +22,6 @@ class MacrosArithmeticParser(ArithmeticParser):
             self._variable_map = formatted_dict
         else:
             self._variable_map.update(formatted_dict)
+
+    def customize(self):
+        self.add_operator('0x', 1, ArithmeticParser.RIGHT, lambda a: int(a, 16))

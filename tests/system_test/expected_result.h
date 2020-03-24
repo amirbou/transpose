@@ -5,70 +5,70 @@
 
 #define LOGPRIORITY_MAX_LEN 12
 #define LOGPRIORITY_PARSER(n, buf) do {\
-        switch(n) {\
-        case LOG_UNKNOWN:\
-                strcpy(buf, "LOG_UNKNOWN");\
-                break;\
-        case LOG_DEFAULT:\
-                strcpy(buf, "LOG_DEFAULT");\
-                break;\
-        case LOG_VERBOSE:\
-                strcpy(buf, "LOG_VERBOSE");\
-                break;\
-        case LOG_DEBUG:\
-                strcpy(buf, "LOG_DEBUG");\
-                break;\
-        case LOG_INFO:\
-                strcpy(buf, "LOG_INFO");\
-                break;\
-        case LOG_WARN:\
-                strcpy(buf, "LOG_WARN");\
-                break;\
-        case LOG_ERROR:\
-                strcpy(buf, "LOG_ERROR");\
-                break;\
-        default:\
-                strcpy(buf, "Unknown");\
-                break;\
-        }\
-    } while (0);
+    switch(n) {\
+    case LOG_UNKNOWN:\
+            strcpy(buf, "LOG_UNKNOWN");\
+            break;\
+    case LOG_DEFAULT:\
+            strcpy(buf, "LOG_DEFAULT");\
+            break;\
+    case LOG_VERBOSE:\
+            strcpy(buf, "LOG_VERBOSE");\
+            break;\
+    case LOG_DEBUG:\
+            strcpy(buf, "LOG_DEBUG");\
+            break;\
+    case LOG_INFO:\
+            strcpy(buf, "LOG_INFO");\
+            break;\
+    case LOG_WARN:\
+            strcpy(buf, "LOG_WARN");\
+            break;\
+    case LOG_ERROR:\
+            strcpy(buf, "LOG_ERROR");\
+            break;\
+    default:\
+            strcpy(buf, "Unknown");\
+            break;\
+    }\
+} while (0);
 
 
 #define LOG_ID_MAX_LEN 19
 #define LOG_ID_PARSER(n, buf) do {\
-        switch(n) {\
-        case LOG_ID_MIN:\
-                strcpy(buf, "LOG_ID_MIN_OR_MAIN");\
-                break;\
-        case LOG_ID_RADIO:\
-                strcpy(buf, "LOG_ID_RADIO");\
-                break;\
-        case LOG_ID_EVENTS:\
-                strcpy(buf, "LOG_ID_EVENTS");\
-                break;\
-        case LOG_ID_SYSTEM:\
-                strcpy(buf, "LOG_ID_SYSTEM");\
-                break;\
-        case LOG_ID_CRASH:\
-                strcpy(buf, "LOG_ID_CRASH");\
-                break;\
-        case LOG_ID_STATS:\
-                strcpy(buf, "LOG_ID_STATS");\
-                break;\
-        case LOG_ID_SECURITY:\
-                strcpy(buf, "LOG_ID_SECURITY");\
-                break;\
-        case LOG_ID_KERNEL:\
-                strcpy(buf, "LOG_ID_KERNEL");\
-                break;\
-        case LOG_ID_MAX:\
-                strcpy(buf, "LOG_ID_MAX");\
-                break;\
-        default:\
-                strcpy(buf, "Unknown");\
-                break;\
-        }\
-    } while (0);
+    switch(n) {\
+    case LOG_ID_MIN:\
+            strcpy(buf, "LOG_ID_MIN_OR_MAIN");\
+            break;\
+    case LOG_ID_RADIO:\
+            strcpy(buf, "LOG_ID_RADIO");\
+            break;\
+    case LOG_ID_EVENTS:\
+            strcpy(buf, "LOG_ID_EVENTS");\
+            break;\
+    case LOG_ID_SYSTEM:\
+            strcpy(buf, "LOG_ID_SYSTEM");\
+            break;\
+    case LOG_ID_CRASH:\
+            strcpy(buf, "LOG_ID_CRASH");\
+            break;\
+    case LOG_ID_STATS:\
+            strcpy(buf, "LOG_ID_STATS");\
+            break;\
+    case LOG_ID_SECURITY:\
+            strcpy(buf, "LOG_ID_SECURITY");\
+            break;\
+    case LOG_ID_KERNEL:\
+            strcpy(buf, "LOG_ID_KERNEL");\
+            break;\
+    case LOG_ID_MAX:\
+            strcpy(buf, "LOG_ID_MAX");\
+            break;\
+    default:\
+            strcpy(buf, "Unknown");\
+            break;\
+    }\
+} while (0);
 
 
 #define DF_MAX_LEN 14
@@ -122,5 +122,3 @@
             break;\
     }\
 } while (0);
-
-
