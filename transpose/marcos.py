@@ -1,5 +1,8 @@
-from pyclibrary import CParser
 from .macro_creator import MacroCreator, Define
+from .arithmatic_parser import *
+import re
+
+HEX_REGEX = re.compile(r"0[xX]([0-9a-fA-F]+)")
 
 
 def strip_underscore(st: str):
@@ -10,6 +13,46 @@ def strip_underscore(st: str):
     :rtype: str
     """
     return st[:st.rindex('_')]
+
+
+def parse_macros_values(macros: dict):
+    """
+    Arithmetically parse the values of integral (and floating point) macros, in order to help creating a one to one
+    mapping from values to names
+    :param macros: dictionary of unparsed macros
+    :return: the macros dictionary, after parsing the values (in place)
+    :rtype: dict
+    """
+    values_changed = True
+    arithmetic_parser = MacrosArithmeticParser()
+    while values_changed:
+        values_changed = False
+        for name, value in macros.items():
+            new_value = None
+            if not isinstance(value, (int, float)):
+                try:
+                    result = arithmetic_parser.parse(value)
+                    new_value = result.evaluate()
+                except NameError:
+                    continue
+            if new_value is not None and new_value != value:
+                macros[name] = new_value
+                values_changed = True
+                arithmetic_parser.add_variables({name: new_value, })
+    return macros
+
+
+def hack_fix_hex_values(macros: dict):
+    """
+    iterate through macros and replace hex values from "0xabc" to "0x'abc'".
+    this is a dirty hack so the arithmetic parser for the 0x operator created will receive the number unparsed,
+    because the default numbers parser is evaluating 'a1' to 0
+    :param macros: dictionary of macros
+    :return: the macros dictionary, after replacing the values (in place)
+    :rtype: dict
+    """
+    for name, value in macros.items():
+        macros[name] = HEX_REGEX.sub(r"0x'\1'", value)
 
 
 def merge_prefixes(prefixes_dict: dict):
@@ -105,16 +148,19 @@ def split_default_parser(defines: list):
     return split_parsers
 
 
-def create_define_macros(parser: CParser):
+def create_define_macros(original_macros: dict):
     """
-    Extracts defines, groups them by prefix, and creates matching macros.
-    :param parser: CParser of the header
-    :return: list of created macros
-    :rtype: list
+    Parses defines, groups them by prefix, and creates matching macros.
+    :param original_macros: dictionary of macros and their values
+    :return: list of created macros, and dict of parsed macros
+    :rtype: (list, dict)
     """
+    hack_fix_hex_values(original_macros)
+    parse_macros_values(original_macros)
+
     defines = list()
 
-    for name, value in parser.defs['macros'].items():
+    for name, value in original_macros.items():
         try:
             defines.append(Define(name, value))
         except (ValueError, TypeError):
@@ -131,5 +177,5 @@ def create_define_macros(parser: CParser):
     else:
         for i in range(len(split_default_parsers)):
             macros.append(MacroCreator(f'_DEFAULT_{i}', split_default_parsers[i]).create_macro())
-    return macros
+    return macros, original_macros
 
