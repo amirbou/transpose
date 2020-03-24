@@ -2,8 +2,7 @@
 from pyclibrary import CParser
 from .enums import create_enum_macros
 from .marcos import create_define_macros
-from .arithmatic_parser import *
-import re
+from .recursive_utils import *
 
 
 def create_output(orig_path: str, enum_macros: list, define_macros: list):
@@ -21,75 +20,83 @@ def create_output(orig_path: str, enum_macros: list, define_macros: list):
     return header
 
 
-def parse_macros_values(macros: dict):
+def transpose_single_file(path: str, macros: dict, basename: bool):
     """
-    Arithmetically parse the values of integral (and floating point) macros, in order to help creating a one to one
-    mapping from values to names
-    :param macros: dictionary of unparsed macros
-    :return: the macros dictionary, after parsing the values (in place)
-    :rtype: dict
-    """
-    values_changed = True
-    arithmetic_parser = MacrosArithmeticParser()
-    while values_changed:
-        values_changed = False
-        for name, value in macros.items():
-            new_value = None
-            if not isinstance(value, (int, float)):
-                try:
-                    result = arithmetic_parser.parse(value)
-                    new_value = result.evaluate()
-                except NameError:
-                    continue
-            if new_value is not None and new_value != value:
-                macros[name] = new_value
-                values_changed = True
-                arithmetic_parser.add_variables({name: new_value, })
-    return macros
-
-
-def hack_fix_hex_values(macros: dict):
-    """
-    iterate through macros and replace hex values from "0xabc" to "0x'abc'".
-    this is a dirty hack so the arithmetic parser for the 0x operator created will receive the number unparsed,
-    because the default numbers parser is evaluating 'a1' to 0
-    :param macros: dictionary of macros
-    :return: the macros dictionary, after replacing the values (in place)
-    :rtype: dict
-    """
-    for name, value in macros.items():
-        macros[name] = re.sub(r"0[xX]([0-9a-fA-F]+)", r"0x'\1'", value)
-
-
-def main(path: str, out_path: str, macros: list, basename=True):
-    """
-    Parses the header file in path and outputs header file of macros to out_path
-    :param path: path of header to create macros for
-    :param out_path: path in which the generated header will be created
-    :param macros: list of macros to pass to the header parser (i.e DEBUG=True)
+    Parses the header file in path and returns header file of macros
+    :param path: path: path of header to create macros for
+    :param macros: dictionary of macros to define before parsing the header
     :param basename: if True, the generated header with use #include "`basename path`" instead of the original one
+    :return: transposed header file content and dictionary of parsed macros
+    :rtype: (str, dict)
     """
-    # TODO: recursively parse headers
-    macros_dict = dict()
-    if macros:
-        for macro in macros:
-            if macro.count('=') == 1:
-                key, value = macro.split('=')
-                macros_dict[key] = value
-            elif macro.count('=') == 0:
-                macros_dict[macro] = ''
-            else:
-                raise ValueError('macros must comply to the gcc -D argument format')
-    parser = CParser([path], macros=macros_dict)
-    hack_fix_hex_values(parser.defs['macros'])
-    parse_macros_values(parser.defs['macros'])
+    for key, value in macros.items():
+        macros[key] = str(value)
+    parser = CParser([path], macros=macros)
 
-    enum_macros = create_enum_macros(parser)
-    define_macros = create_define_macros(parser)
+    enum_macros = create_enum_macros(parser.defs['enums'])
+    define_macros, parsed_macros = create_define_macros(parser.defs['macros'])
 
     if basename:
         import os
         path = os.path.basename(path)
-    output = create_output(path, enum_macros, define_macros)
-    with open(out_path, 'w') as fd:
-        fd.write(output)
+    return create_output(path, enum_macros, define_macros), parsed_macros
+
+
+def main(path: str,
+         out_path: str,
+         macros: list,
+         basename: bool,
+         recursive: bool,
+         parse_std: bool,
+         compiler: str,
+         include_dirs: list,
+         max_headers: int,
+         force: bool
+         ):
+    """
+    Parses the header file in path and outputs header file of macros to out_path
+    :param path: path of header to create macros for
+    :param out_path: path in which the generated header will be created, if in recursive mode,
+                     path to directory in which the generated headers will reside
+    :param macros: list of macros to pass to the header parser (i.e DEBUG=True)
+    :param basename: if True, the generated header with use #include "`basename path`" instead of the original one
+    :param recursive: if True, recursively run through included (local) header files (#include "header.h")
+    :param parse_std: if True, when recursing through included header files, also parse #include <header.h>
+    :param compiler: if parse_std, use the provided compiler to get the default include directories
+    :param include_dirs: list of include directories to search in when running recursively.
+    :param max_headers: maximum number of headers to parse in recursion mode
+    :param force: overwrite existing out_path
+    """
+    macros_dict = dict()
+    for macro in macros:
+        if macro.count('=') == 1:
+            key, value = macro.split('=')
+            macros_dict[key] = value
+        elif macro.count('=') == 0:
+            macros_dict[macro] = ''
+        else:
+            raise ValueError('macros must comply to the gcc -D argument format')
+    for include_dir in include_dirs:
+        if not os.path.exists(include_dir):
+            raise ValueError(f'include dir {include_dir} does not exist')
+    if recursive:
+        traversal_list = RecursiveUtil(path, parse_std, include_dirs, compiler, max_headers).create_header_traversal_list()
+        output = []
+        for header in traversal_list:
+            transposed, macros_dict = transpose_single_file(header, macros_dict, basename)
+            output.append((header, transposed))
+        try:
+            os.mkdir(out_path)
+        except FileExistsError:
+            if not force:
+                raise ValueError(f'Directory {out_path} already exists, use -f to overwrite')
+        for header, transposed in output:
+            with open(os.path.join(out_path, 'transposed_' + header), 'w') as writer:
+                writer.write(transposed)
+        return 0
+    else:
+        output, _ = transpose_single_file(path, macros_dict, basename)
+        if os.path.exists(out_path) and not force:
+            raise ValueError(f'File {out_path} already exists, use -f to overwrite')
+        with open(out_path, 'w') as fd:
+            fd.write(output)

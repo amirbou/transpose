@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='Transpose',
-    version='0.0.3',
+    version='0.1.0',
     packages=['transpose', ],
     entry_points={
         'console_scripts': [
@@ -12,5 +12,6 @@ setup(
     author='amirbou',
     install_requires=['pyclibrary',
                       'plusminus',
+                      'networkx'
                       ]
 )

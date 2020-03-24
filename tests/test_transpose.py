@@ -9,8 +9,8 @@ SYSTEM_TEST_PATH = os.path.join('tests', 'system_test')
 
 def do_transpose(path):
     parser = CParser([path])
-    enum_macros = create_enum_macros(parser)
-    define_macros = create_define_macros(parser)
+    enum_macros = create_enum_macros(parser.defs['enums'])
+    define_macros, _ = create_define_macros(parser.defs['macros'])
     return create_output(os.path.basename(path), enum_macros, define_macros)
 
 
@@ -32,7 +32,8 @@ def test_main():
 
 
 def test_in_c(tmpdir):
-    main(os.path.join(SYSTEM_TEST_PATH, 'test.h'), tmpdir / 'result.h', [])
+    main(os.path.join(SYSTEM_TEST_PATH, 'test.h'), tmpdir / 'result.h', macros=[],
+         basename=True, recursive=False, parse_std=False, compiler='gcc', include_dirs=[], max_headers=20, force=False)
     shutil.copyfile(os.path.join(SYSTEM_TEST_PATH, 'test.h'), tmpdir / 'test.h')
     shutil.copyfile(os.path.join(SYSTEM_TEST_PATH, 'main.c'), tmpdir / 'main.c')
     result = ""
