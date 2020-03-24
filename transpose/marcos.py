@@ -1,8 +1,24 @@
-from .macro_creator import MacroCreator, Define
+from .macro_creator import MacroCreator, CDefinition
 from .arithmatic_parser import *
 import re
 
 HEX_REGEX = re.compile(r"0[xX]([0-9a-fA-F]+)")
+
+
+class Define(CDefinition):
+    """
+    class holding name and values extracted from #define
+    values are use to try and merge lists of Define's to minimize resulting code
+    """
+    def __init__(self, name, value):
+        """
+        casts value from string to integer, might raise ValueError
+        """
+        self.name = name
+        if isinstance(value, (int, float)):
+            self.value = value
+        else:
+            self.value = int(value, 0)
 
 
 def strip_underscore(st: str):

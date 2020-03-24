@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from pyclibrary import CParser
 from os.path import commonprefix
 from typing import Any
 
@@ -20,30 +19,6 @@ class CDefinition:
             return True
 
 
-class Define(CDefinition):
-    """
-    class holding name and values extracted from #define
-    values are use to try and merge lists of Define's to minimize resulting code
-    """
-    def __init__(self, name, value):
-        """
-        casts value from string to integer, might throw ValueError
-        """
-        self.name = name
-        if isinstance(value, (int, float)):
-            self.value = value
-        else:
-            self.value = int(value, 0)
-
-
-class Enumee(CDefinition):
-    """
-    class holding name and values extracted from specific enum
-    values are used to try resolve multiple enumees with the same value
-    """
-    pass
-
-
 class MacroCreator:
     """
     class holding an macro name, and a list of its CDefinitions
@@ -54,9 +29,9 @@ class MacroCreator:
 
     def _merge_cdefs(self):
         """
-        Merges enumees with the same value so the reverse lookup will return PREFIX_VAL1_OR_VAL2 where prefix is
+        Merges cdefs with the same value so the reverse lookup will return PREFIX_VAL1_OR_VAL2 where prefix is
         a common prefix of val1 and val2 and VAL1, VAL2 are val1,val2 without the prefix.
-        :return: dictionary such that [enumee_merged_name] = one enumee associated with it
+        :return: dictionary such that dict[cdefs_merged_name] = one cdef associated with it
         :rtype: dict
         """
         reverse_cdefs = {}
@@ -86,7 +61,6 @@ class MacroCreator:
         creates 2 C macros:
             self.name_MAX_LEN - holding the max length of the names returned
             self.name_PARSER  - macro receiving a value and a buffer, that copies the name of the value to the buffer
-        :param self:
         :return: string defining the macros
         :rtype: str
         """

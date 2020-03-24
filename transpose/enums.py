@@ -1,4 +1,12 @@
-from .macro_creator import Enumee, MacroCreator
+from .macro_creator import CDefinition, MacroCreator
+
+
+class Enumee(CDefinition):
+    """
+    class holding name and values extracted from specific enum
+    values are used to try resolve multiple enumees with the same value
+    """
+    pass
 
 
 def create_enum_macros(enums: dict):
