@@ -1,12 +1,12 @@
 import argparse
 from .transpose import main
-import os
+import os, sys
 
 
 def _main():
     parser = argparse.ArgumentParser(prog='transpose', description='Create macros to reverse enums and defines from header file')
     parser.add_argument('in_file', help='input file')
-    parser.add_argument('out', help='output file. if in recursive mode, output dir')
+    parser.add_argument('out_file', help='output file.')
     parser.add_argument('--no-basename', dest='basename', action='store_false',
                         help='include full path to input instead of basename')
     parser.add_argument('-D', action='append', default=[],
@@ -32,18 +32,19 @@ def _main():
         print("Warning: no --parse-std, ignoring --compiler")
     if os.path.curdir not in [os.path.realpath(include_dir) for include_dir in args.I]:  # add cwd if not present
         args.I.insert(0, os.path.curdir)
-    main(args.in_file,
-         args.out,
-         args.D,
-         args.basename,
-         args.recursive,
-         args.parse_std,
-         args.compiler,
-         args.I,
-         args.max_headers,
-         args.force
-         )
+    return main(args.in_file,
+                args.out_file,
+                args.D,
+                args.basename,
+                args.recursive,
+                args.parse_std,
+                args.compiler,
+                args.I,
+                args.max_headers,
+                args.force
+                )
 
 
 if __name__ == '__main__':
-    _main()
+    sys.exit(_main())
+

@@ -56,8 +56,7 @@ def main(path: str,
     """
     Parses the header file in path and outputs header file of macros to out_path
     :param path: path of header to create macros for
-    :param out_path: path in which the generated header will be created, if in recursive mode,
-                     path to directory in which the generated headers will reside
+    :param out_path: path in which the generated header will be created
     :param macros: list of macros to pass to the header parser (i.e DEBUG=True)
     :param basename: if True, the generated header with use #include "`basename path`" instead of the original one
     :param recursive: if True, recursively run through included (local) header files (#include "header.h")
@@ -67,36 +66,33 @@ def main(path: str,
     :param max_headers: maximum number of headers to parse in recursion mode
     :param force: overwrite existing out_path
     """
-    macros_dict = dict()
-    for macro in macros:
-        if macro.count('=') == 1:
-            key, value = macro.split('=')
-            macros_dict[key] = value
-        elif macro.count('=') == 0:
-            macros_dict[macro] = ''
+    try:
+        macros_dict = dict()
+        for macro in macros:
+            if macro.count('=') == 1:
+                key, value = macro.split('=')
+                macros_dict[key] = value
+            elif macro.count('=') == 0:
+                macros_dict[macro] = ''
+            else:
+                raise ValueError('macros must comply to the gcc -D argument format')
+        for include_dir in include_dirs:
+            if not os.path.exists(include_dir):
+                raise ValueError(f'include dir {include_dir} does not exist')
+        output = ""
+        if recursive:
+            traversal_list = RecursiveUtil(path, parse_std, include_dirs, compiler, max_headers).create_header_traversal_list()
+            for header in traversal_list:
+                # we passed the updated macros_dict through all the transpose_single_file
+                # calls so the final value will have all the macros needed
+                output, macros_dict = transpose_single_file(header, macros_dict, basename)
         else:
-            raise ValueError('macros must comply to the gcc -D argument format')
-    for include_dir in include_dirs:
-        if not os.path.exists(include_dir):
-            raise ValueError(f'include dir {include_dir} does not exist')
-    if recursive:
-        traversal_list = RecursiveUtil(path, parse_std, include_dirs, compiler, max_headers).create_header_traversal_list()
-        output = []
-        for header in traversal_list:
-            transposed, macros_dict = transpose_single_file(header, macros_dict, basename)
-            output.append((header, transposed))
-        try:
-            os.mkdir(out_path)
-        except FileExistsError:
-            if not force:
-                raise ValueError(f'Directory {out_path} already exists, use -f to overwrite')
-        for header, transposed in output:
-            with open(os.path.join(out_path, 'transposed_' + header), 'w') as writer:
-                writer.write(transposed)
-        return 0
-    else:
-        output, _ = transpose_single_file(path, macros_dict, basename)
+            output, _ = transpose_single_file(path, macros_dict, basename)
         if os.path.exists(out_path) and not force:
             raise ValueError(f'File {out_path} already exists, use -f to overwrite')
         with open(out_path, 'w') as fd:
             fd.write(output)
+        return 0
+    except ValueError as error:
+        print(error, file=os.sys.stderr)
+        return -1
