@@ -1,6 +1,7 @@
 import os
 import subprocess
 import networkx as nx
+import pyclibrary
 import re
 
 
@@ -56,11 +57,10 @@ class RecursiveUtil:
         :return: the full path to the header, None if header was not found
         :rtype: str
         """
-        for include_dir in self.include_dirs:
-            path = os.path.join(include_dir, header)
-            if os.path.exists(path):
-                return path
-        return None
+        try:
+            return pyclibrary.utils.find_header(header, dirs=self.include_dirs)
+        except OSError:
+            return None
 
     def extract_dependencies(self, header: str):
         """
@@ -106,8 +106,9 @@ class RecursiveUtil:
                 for header in headers:
                     if header not in graph:
                         new_nodes = True
-                        graph.add_node(header)
-                        graph.add_edge(current_header, header)
+                        header_full_path = self.find_header(header)
+                        graph.add_node(header_full_path)
+                        graph.add_edge(current_header, header_full_path)
                 parsed_headers.append(current_header)
         return graph
 

@@ -45,7 +45,7 @@ def parse_macros_values(macros: dict):
         values_changed = False
         for name, value in macros.items():
             new_value = None
-            if not isinstance(value, (int, float)):
+            if value and not isinstance(value, (int, float)):
                 try:
                     result = arithmetic_parser.parse(value)
                     new_value = result.evaluate()

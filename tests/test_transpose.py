@@ -33,7 +33,7 @@ def test_main():
 
 def test_in_c(tmpdir):
     main(os.path.join(SYSTEM_TEST_PATH, 'test.h'), tmpdir / 'result.h', macros=[],
-         basename=True, recursive=False, parse_std=False, compiler='gcc', include_dirs=[], max_headers=20, force=False)
+         recursive=False, parse_std=False, compiler='gcc', include_dirs=[], max_headers=20, force=False)
     shutil.copyfile(os.path.join(SYSTEM_TEST_PATH, 'test.h'), tmpdir / 'test.h')
     shutil.copyfile(os.path.join(SYSTEM_TEST_PATH, 'main.c'), tmpdir / 'main.c')
     result = ""

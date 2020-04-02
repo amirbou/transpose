@@ -1,7 +1,7 @@
 #! /usr/bin/env python
-from pyclibrary import CParser
+from pyclibrary import CParser, utils
 from .enums import create_enum_macros
-from .marcos import create_define_macros
+from .macros import create_define_macros
 from .recursive_utils import *
 
 
@@ -20,12 +20,11 @@ def create_output(orig_path: str, enum_macros: list, define_macros: list):
     return header
 
 
-def transpose_files(paths: list, macros: dict, basename: bool):
+def transpose_files(paths: list, macros: dict):
     """
     Parses the header files in paths and returns header file of macros
     :param paths: list of path of headers to create macros for. should be ordered in topological ordering regarding dependency
     :param macros: dictionary of macros to define before parsing the header
-    :param basename: if True, the generated header with use #include "`basename path`" instead of the original one
     :return: transposed header file content and dictionary of parsed macros
     :rtype: str
     """
@@ -35,16 +34,12 @@ def transpose_files(paths: list, macros: dict, basename: bool):
     define_macros = create_define_macros(parser.defs['macros'])
 
     path = paths[-1]  # only the last header is needed to be included, as it will #include all the others
-    if basename:
-        path = os.path.basename(path)
-
-    return create_output(path, enum_macros, define_macros)
+    return create_output(os.path.basename(path), enum_macros, define_macros)
 
 
 def main(path: str,
          out_path: str,
          macros: list,
-         basename: bool,
          recursive: bool,
          parse_std: bool,
          compiler: str,
@@ -57,7 +52,6 @@ def main(path: str,
     :param path: path of header to create macros for
     :param out_path: path in which the generated header will be created
     :param macros: list of macros to pass to the header parser (i.e DEBUG=True)
-    :param basename: if True, the generated header with use #include "`basename path`" instead of the original one
     :param recursive: if True, recursively run through included (local) header files (#include "header.h")
     :param parse_std: if True, when recursing through included header files, also parse #include <header.h>
     :param compiler: if parse_std, use the provided compiler to get the default include directories
@@ -76,13 +70,13 @@ def main(path: str,
             else:
                 raise ValueError('macros must comply to the gcc -D argument format')
         for include_dir in include_dirs:
-            if not os.path.exists(include_dir):
+            if not os.path.isdir(include_dir):
                 raise ValueError(f'include dir {include_dir} does not exist')
         if recursive:
             traversal_list = RecursiveUtil(path, parse_std, include_dirs, compiler, max_headers).create_header_traversal_list()
-            output = transpose_files(traversal_list, macros_dict, basename)
+            output = transpose_files(traversal_list, macros_dict)
         else:
-            output = transpose_files([path, ], macros_dict, basename)
+            output = transpose_files([path, ], macros_dict)
         if os.path.exists(out_path) and not force:
             raise ValueError(f'File {out_path} already exists, use -f to overwrite')
         with open(out_path, 'w') as fd:
