@@ -169,7 +169,7 @@ def create_define_macros(original_macros: dict):
     Parses defines, groups them by prefix, and creates matching macros.
     :param original_macros: dictionary of macros and their values
     :return: list of created macros, and dict of parsed macros
-    :rtype: (list, dict)
+    :rtype: list
     """
     hack_fix_hex_values(original_macros)
     parse_macros_values(original_macros)
@@ -193,5 +193,5 @@ def create_define_macros(original_macros: dict):
     else:
         for i in range(len(split_default_parsers)):
             macros.append(MacroCreator(f'_DEFAULT_{i}', split_default_parsers[i]).create_macro())
-    return macros, original_macros
+    return macros
 

@@ -10,7 +10,7 @@ SYSTEM_TEST_PATH = os.path.join('tests', 'system_test')
 def do_transpose(path):
     parser = CParser([path])
     enum_macros = create_enum_macros(parser.defs['enums'])
-    define_macros, _ = create_define_macros(parser.defs['macros'])
+    define_macros = create_define_macros(parser.defs['macros'])
     return create_output(os.path.basename(path), enum_macros, define_macros)
 
 

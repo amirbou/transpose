@@ -1,6 +1,9 @@
+#! /usr/bin/env python
+# PYTHON_ARGCOMPLETE_OK
 import argparse
 from .transpose import main
 import os, sys
+
 
 
 def _main():
@@ -24,6 +27,11 @@ def _main():
     parser.add_argument('-f,--force', action='store_true', dest='force',
                         help='overwrite existing out_path')
     parser.set_defaults(basename=True, force=False)
+    try:
+        import argcomplete
+        argcomplete.autocomplete(parser)
+    except ImportError:
+        pass
     args = parser.parse_args()
     if not args.recursive:
         if args.parse_std or args.I:

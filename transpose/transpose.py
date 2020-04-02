@@ -20,26 +20,25 @@ def create_output(orig_path: str, enum_macros: list, define_macros: list):
     return header
 
 
-def transpose_single_file(path: str, macros: dict, basename: bool):
+def transpose_files(paths: list, macros: dict, basename: bool):
     """
-    Parses the header file in path and returns header file of macros
-    :param path: path: path of header to create macros for
+    Parses the header files in paths and returns header file of macros
+    :param paths: list of path of headers to create macros for. should be ordered in topological ordering regarding dependency
     :param macros: dictionary of macros to define before parsing the header
     :param basename: if True, the generated header with use #include "`basename path`" instead of the original one
     :return: transposed header file content and dictionary of parsed macros
-    :rtype: (str, dict)
+    :rtype: str
     """
-    for key, value in macros.items():
-        macros[key] = str(value)
-    parser = CParser([path], macros=macros)
+    parser = CParser(paths, macros=macros)
 
     enum_macros = create_enum_macros(parser.defs['enums'])
-    define_macros, parsed_macros = create_define_macros(parser.defs['macros'])
+    define_macros = create_define_macros(parser.defs['macros'])
 
+    path = paths[-1]  # only the last header is needed to be included, as it will #include all the others
     if basename:
-        import os
         path = os.path.basename(path)
-    return create_output(path, enum_macros, define_macros), parsed_macros
+
+    return create_output(path, enum_macros, define_macros)
 
 
 def main(path: str,
@@ -79,15 +78,11 @@ def main(path: str,
         for include_dir in include_dirs:
             if not os.path.exists(include_dir):
                 raise ValueError(f'include dir {include_dir} does not exist')
-        output = ""
         if recursive:
             traversal_list = RecursiveUtil(path, parse_std, include_dirs, compiler, max_headers).create_header_traversal_list()
-            for header in traversal_list:
-                # we passed the updated macros_dict through all the transpose_single_file
-                # calls so the final value will have all the macros needed
-                output, macros_dict = transpose_single_file(header, macros_dict, basename)
+            output = transpose_files(traversal_list, macros_dict, basename)
         else:
-            output, _ = transpose_single_file(path, macros_dict, basename)
+            output = transpose_files([path, ], macros_dict, basename)
         if os.path.exists(out_path) and not force:
             raise ValueError(f'File {out_path} already exists, use -f to overwrite')
         with open(out_path, 'w') as fd:
