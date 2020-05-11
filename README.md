@@ -9,7 +9,7 @@ Transpose will try to combine as many macros in the original file to a single va
 ## Installation
 clone the repository:
 ```
-git clone ???
+git clone https://github.com/amirbou/transpose.git
 ```
 and use pip:
 ```
