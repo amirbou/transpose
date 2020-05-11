@@ -23,9 +23,10 @@ class MacroCreator:
     """
     class holding an macro name, and a list of its CDefinitions
     """
-    def __init__(self, name: str, cdefs: list):
+    def __init__(self, name: str, cdefs: list, inline_type = None):
         self.name = name
         self.cdefs = cdefs
+        self.inline_type = inline_type
 
     def _merge_cdefs(self):
         """
@@ -56,7 +57,18 @@ class MacroCreator:
                 result[cdef.name] = cdef
         return result
 
-    def create_macro(self):
+    def create_parser(self):
+        """
+        Chooses whether to create an inline function or macro, based on the presence of inline_type
+        :return: string defining parser macros / function
+        :rtype: str
+        """
+        if self.inline_type:
+            return self._create_inline_function()
+        return self._create_macro()
+
+
+    def _create_macro(self):
         """
         creates 2 C macros:
             self.name_MAX_LEN - holding the max length of the names returned
@@ -86,3 +98,26 @@ class MacroCreator:
         final_macro = '\n'.join([line + '\\' for line in macro.splitlines()[:-1]])
         final_macro += '\n' + macro.splitlines()[-1]
         return max_length_macro + '\n' + final_macro
+
+    def _create_inline_function(self):
+        """
+        Creates an inline function, taking argument of type self.inline_type and returning a pointer to 'const char *'
+        the function will be named 'self.name_parser'
+        :return: string defining the inline function
+        :rtype: str
+        """
+        merged = self._merge_cdefs()
+        if merged is None or len(merged) == 0:
+            return ""
+        function = f"""static inline const char * {self.name.lower()}_parser({self.inline_type} n) {{
+    switch(n) {{"""
+        for name in merged:
+            function += f"""
+    case {merged[name].name}:
+        return \"{name}\";"""
+        function += """
+    default:
+        return \"Unknown\";
+    }
+}"""
+        return function

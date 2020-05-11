@@ -3,72 +3,52 @@
 #include "test.h"
 
 
-#define LOGPRIORITY_MAX_LEN 12
-#define LOGPRIORITY_PARSER(n, buf) do {\
-    switch(n) {\
-    case LOG_UNKNOWN:\
-            strcpy(buf, "LOG_UNKNOWN");\
-            break;\
-    case LOG_DEFAULT:\
-            strcpy(buf, "LOG_DEFAULT");\
-            break;\
-    case LOG_VERBOSE:\
-            strcpy(buf, "LOG_VERBOSE");\
-            break;\
-    case LOG_DEBUG:\
-            strcpy(buf, "LOG_DEBUG");\
-            break;\
-    case LOG_INFO:\
-            strcpy(buf, "LOG_INFO");\
-            break;\
-    case LOG_WARN:\
-            strcpy(buf, "LOG_WARN");\
-            break;\
-    case LOG_ERROR:\
-            strcpy(buf, "LOG_ERROR");\
-            break;\
-    default:\
-            strcpy(buf, "Unknown");\
-            break;\
-    }\
-} while (0);
+static inline const char * logpriority_parser(enum LogPriority n) {
+    switch(n) {
+    case LOG_UNKNOWN:
+        return "LOG_UNKNOWN";
+    case LOG_DEFAULT:
+        return "LOG_DEFAULT";
+    case LOG_VERBOSE:
+        return "LOG_VERBOSE";
+    case LOG_DEBUG:
+        return "LOG_DEBUG";
+    case LOG_INFO:
+        return "LOG_INFO";
+    case LOG_WARN:
+        return "LOG_WARN";
+    case LOG_ERROR:
+        return "LOG_ERROR";
+    default:
+        return "Unknown";
+    }
+}
 
 
-#define LOG_ID_MAX_LEN 19
-#define LOG_ID_PARSER(n, buf) do {\
-    switch(n) {\
-    case LOG_ID_MIN:\
-            strcpy(buf, "LOG_ID_MIN_OR_MAIN");\
-            break;\
-    case LOG_ID_RADIO:\
-            strcpy(buf, "LOG_ID_RADIO");\
-            break;\
-    case LOG_ID_EVENTS:\
-            strcpy(buf, "LOG_ID_EVENTS");\
-            break;\
-    case LOG_ID_SYSTEM:\
-            strcpy(buf, "LOG_ID_SYSTEM");\
-            break;\
-    case LOG_ID_CRASH:\
-            strcpy(buf, "LOG_ID_CRASH");\
-            break;\
-    case LOG_ID_STATS:\
-            strcpy(buf, "LOG_ID_STATS");\
-            break;\
-    case LOG_ID_SECURITY:\
-            strcpy(buf, "LOG_ID_SECURITY");\
-            break;\
-    case LOG_ID_KERNEL:\
-            strcpy(buf, "LOG_ID_KERNEL");\
-            break;\
-    case LOG_ID_MAX:\
-            strcpy(buf, "LOG_ID_MAX");\
-            break;\
-    default:\
-            strcpy(buf, "Unknown");\
-            break;\
-    }\
-} while (0);
+static inline const char * log_id_parser(enum log_id n) {
+    switch(n) {
+    case LOG_ID_MIN:
+        return "LOG_ID_MIN_OR_MAIN";
+    case LOG_ID_RADIO:
+        return "LOG_ID_RADIO";
+    case LOG_ID_EVENTS:
+        return "LOG_ID_EVENTS";
+    case LOG_ID_SYSTEM:
+        return "LOG_ID_SYSTEM";
+    case LOG_ID_CRASH:
+        return "LOG_ID_CRASH";
+    case LOG_ID_STATS:
+        return "LOG_ID_STATS";
+    case LOG_ID_SECURITY:
+        return "LOG_ID_SECURITY";
+    case LOG_ID_KERNEL:
+        return "LOG_ID_KERNEL";
+    case LOG_ID_MAX:
+        return "LOG_ID_MAX";
+    default:
+        return "Unknown";
+    }
+}
 
 
 #define DF_MAX_LEN 14

@@ -17,6 +17,7 @@ def create_output(orig_path: str, enum_macros: list, define_macros: list):
     header += '\n\n\n'.join(enum_macros)
     header += '\n\n\n'
     header += '\n\n\n'.join(define_macros)
+    header += '\n'
     return header
 
 

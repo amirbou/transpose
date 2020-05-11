@@ -19,7 +19,7 @@ def create_enum_macros(enums: dict):
     macros = []
     for enum in enums:
         enumee_list = [Enumee(enumee.upper(), enums[enum][enumee]) for enumee in enums[enum]]
-        current_enum = MacroCreator(enum.upper(), enumee_list)
-        macros.append(current_enum.create_macro())
+        current_enum = MacroCreator(enum.upper(), enumee_list, inline_type=f'enum {enum}')
+        macros.append(current_enum.create_parser())
 
     return macros
