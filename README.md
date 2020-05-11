@@ -13,7 +13,7 @@ git clone https://github.com/amirbou/transpose.git
 ```
 and use pip:
 ```
-pip install ./transpose
+pip3 install ./transpose
 ```
 
 ## Usage
