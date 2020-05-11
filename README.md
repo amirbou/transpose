@@ -61,7 +61,7 @@ optional arguments:
 - Adding include directories with ```-I dir1 -I dir2```
 - Parsing standard headers with ```--parse-std```
 - Specifying a compiler for using its search path when searching for headers with ```--compiler /bin/clang```
-- If [argcomplete](https://pypi.org/project/argcomplete/) is installed, you can enjoy autocompletion in bash by using ```activate-global-python-argcomplete``` or adding ```eval "$(register-python-argcomplete transpose)"``` to your ```bash.rc```
+- If [argcomplete](https://pypi.org/project/argcomplete/) is installed, you can enjoy autocompletion in bash by using ```activate-global-python-argcomplete``` or adding ```eval "$(register-python-argcomplete transpose)"``` to your ```.bashrc```
 
 
 ## Examples
