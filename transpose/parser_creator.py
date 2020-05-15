@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from os.path import commonprefix
 from typing import Any
-
+import sys
 
 @dataclass
 class CDefinition:
@@ -23,11 +23,16 @@ class ParserCreator:
     """
     class holding an macro name, and a list of its CDefinitions
     """
-    def __init__(self, name: str, cdefs: list, inline_type = None):
+    def __init__(self, name: str, cdefs: list, inline_type = None, verbose = False):
         self.name = name
         self.cdefs = cdefs
         self.inline_type = inline_type
+        self.verbose = verbose
 
+    def _log(self, message):
+        if self.verbose:
+            print(message, file=sys.stderr)
+    
     def _merge_cdefs(self):
         """
         Merges cdefs with the same value so the reverse lookup will return PREFIX_VAL1_OR_VAL2 where prefix is
@@ -81,7 +86,7 @@ class ParserCreator:
             return ""
         max_length = max([len(name) + 1 for name in merged.keys()])
         max_length = max(max_length, len('Unknown') + 1)
-        max_length_macro = f"#define {self.name.upper()}_MAX_LEN {max_length}"
+        max_length_macro = f"#define {self.name.upper()}_MAX_LEN ({max_length})"
         macro = f"""#define {self.name.upper()}_PARSER(n, buf) do {{
     switch(n) {{"""
         for name in merged:
@@ -97,6 +102,8 @@ class ParserCreator:
 } while (0);"""
         final_macro = '\n'.join([line + '\\' for line in macro.splitlines()[:-1]])
         final_macro += '\n' + macro.splitlines()[-1]
+        self._log(f'Created macro: {self.name.upper()}_MAX_LEN ({max_length})')
+        self._log(f'Created macro: {self.name.upper()}_PARSER(n, buf)')
         return max_length_macro + '\n' + final_macro
 
     def _create_inline_function(self):
@@ -120,4 +127,5 @@ class ParserCreator:
         return \"Unknown\";
     }
 }"""
+        self._log(f'Created inline function: {self.name.lower()}_parser({self.inline_type} n)')
         return function

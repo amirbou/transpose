@@ -51,7 +51,7 @@ static inline const char * log_id_parser(enum log_id n) {
 }
 
 
-#define DF_MAX_LEN 14
+#define DF_MAX_LEN (14)
 #define DF_PARSER(n, buf) do {\
     switch(n) {\
     case DF_ORIGIN:\
@@ -76,7 +76,7 @@ static inline const char * log_id_parser(enum log_id n) {
 } while (0);
 
 
-#define DF_1_MAX_LEN 15
+#define DF_1_MAX_LEN (15)
 #define DF_1_PARSER(n, buf) do {\
     switch(n) {\
     case DF_1_NOW:\

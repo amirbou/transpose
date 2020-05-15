@@ -164,10 +164,11 @@ def split_default_parser(defines: list):
     return split_parsers
 
 
-def create_define_macros(original_macros: dict):
+def create_define_macros(original_macros: dict, verbose = True):
     """
     Parses defines, groups them by prefix, and creates matching macros.
     :param original_macros: dictionary of macros and their values
+    :param verbose: use more verbose ParserCreator
     :return: list of created macros, and dict of parsed macros
     :rtype: list
     """
@@ -185,13 +186,13 @@ def create_define_macros(original_macros: dict):
     prefixes = merge_prefixes(prefixes)
     macros = []
     for prefix in prefixes:
-        macros.append(ParserCreator(prefix, prefixes[prefix]).create_parser())
+        macros.append(ParserCreator(prefix, prefixes[prefix], verbose=verbose).create_parser())
 
     split_default_parsers = split_default_parser(no_prefix)
     if len(split_default_parsers) == 1:
-        macros.append(ParserCreator(f'_DEFAULT', no_prefix).create_parser())
+        macros.append(ParserCreator(f'_DEFAULT', no_prefix, verbose=verbose).create_parser())
     else:
         for i in range(len(split_default_parsers)):
-            macros.append(ParserCreator(f'_DEFAULT_{i}', split_default_parsers[i]).create_parser())
+            macros.append(ParserCreator(f'_DEFAULT_{i}', split_default_parsers[i], verbose=verbose).create_parser())
     return macros
 
