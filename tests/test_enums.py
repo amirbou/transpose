@@ -16,7 +16,7 @@ def test_merge_enumee():
         Enumee('LOG_ID_KERNEL', 7),
         Enumee('LOG_ID_MAX', 8)
     ]
-    enum = MacroCreator('LOG_ID', enumees)
+    enum = ParserCreator('LOG_ID', enumees)
     expected_result = {
         'LOG_ID_MIN_OR_MAIN': Enumee('LOG_ID_MIN', 0),
         'LOG_ID_RADIO': Enumee('LOG_ID_RADIO', 1),

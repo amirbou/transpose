@@ -19,7 +19,7 @@ class CDefinition:
             return True
 
 
-class MacroCreator:
+class ParserCreator:
     """
     class holding an macro name, and a list of its CDefinitions
     """
