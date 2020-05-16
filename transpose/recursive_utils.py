@@ -70,5 +70,10 @@ class RecursiveUtil:
         output = subprocess.run(args, capture_output=True).stdout.decode('utf-8')
         output = output.split(':')[1] # remove 'objfile.o:'
         output = output.replace('\\', ' ')
-        return [os.path.abspath(path) for path in output.split()]
+        traversal_list = [os.path.abspath(path) for path in output.split()]
+        if len(traversal_list) > self.max_headers:
+            print(f'Warning: required headers {len(traversal_list)} are more the max allowed ({self.max_headers}).', file=sys.stderr)
+            print('Truncating required headers')
+            traversal_list = traversal_list[:self.max_headers]
+        return traversal_list
         
