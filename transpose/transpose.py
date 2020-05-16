@@ -4,6 +4,12 @@ from .enums import create_enum_macros
 from .macros import create_define_macros
 from .recursive_utils import *
 import sys
+import subprocess
+import tempfile
+
+def get_default_definitions(compiler: str):
+
+    return parser.defs['macros']
 
 def create_output(orig_path: str, enum_macros: list, define_macros: list):
     """
@@ -62,7 +68,7 @@ def main(path: str,
     :param dry_run: print a list of parsers to be created instead of creating the output file.
     """
     try:
-        macros_dict = dict()
+        macros_dict = dict() 
         for macro in macros:
             if macro.count('=') == 1:
                 key, value = macro.split('=')
@@ -77,8 +83,11 @@ def main(path: str,
                 raise ValueError(f'include dir {include_dir} does not exist')
 
         if recursive:
-            traversal_list = RecursiveUtil(path, parse_std, include_dirs, compiler, max_headers).create_header_traversal_list()
-            output = transpose_files(traversal_list, macros_dict)
+            # traversal_list = RecursiveUtil(path, parse_std, include_dirs, compiler, max_headers).create_header_traversal_list()
+            # output = transpose_files(traversal_list, macros_dict)
+            with tempfile.NamedTemporaryFile() as fd:
+                fd.write(subprocess.run([compiler, '-dM', '-E', path], capture_output=True).stdout)
+                output = transpose_files([fd.name, ], macros_dict)
         else:
             output = transpose_files([path, ], macros_dict)
         

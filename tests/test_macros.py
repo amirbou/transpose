@@ -101,6 +101,7 @@ def test_merge_prefixes_collisions():
     prefixes = merge_prefixes(subject)
     assert sorted(list(prefixes.keys())) == sorted(['PF', 'STB', 'SHF', 'SHF_INFO'])
 
+
 def test_parse_macros_values():
     subject = {
         'A': '0x1',
@@ -109,9 +110,9 @@ def test_parse_macros_values():
         'D': '0x0ff00000',
         'E': '0xf0000000',
         'F': '10',
-        'G': '12',
-        'H': '13',
-        'I': '15',
+        'G': '~1',
+        'H': '3 & 1',
+        'I': '1 | 2',
         'J': '0x10',
         'K': '0x800',
         'L': '0x0ff00000',
@@ -119,6 +120,9 @@ def test_parse_macros_values():
         'N': 'M + 1',
         'O': 'P + 2',
         'P': 'N',
+        'Q': '1 << 4',
+        'R': '1>> 2',
+        'S': '2 >> 1'
     }
     expected = {
         'A': 0x1,
@@ -127,12 +131,15 @@ def test_parse_macros_values():
         'D': 0x0ff00000,
         'E': 0xf0000000,
         'F': 10,
-        'G': 12,
-        'H': 13,
-        'I': 15,
+        'G': -2,
+        'H': 3 & 1,
+        'I': 1 | 2,
         'J': 0x10,
         'K': 0x800,
         'L': 0x0ff00000,
+        'Q': 1 << 4,
+        'R': 1 >> 2,
+        'S': 2 >> 1,
     }
     expected['M'] = expected['J'] + expected['I']
     expected['N'] = expected['M'] + 1

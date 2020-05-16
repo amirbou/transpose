@@ -1,5 +1,7 @@
 from .parser_creator import ParserCreator, CDefinition
 from .arithmatic_parser import *
+from pyparsing import ParseException
+import sys
 import re
 
 HEX_REGEX = re.compile(r"0[xX]([0-9a-fA-F]+)")
@@ -50,6 +52,11 @@ def parse_macros_values(macros: dict) -> dict:
                     new_value = result.evaluate()
                 except NameError:
                     continue
+                except ParseException:
+                    print(f'Warning: failed to parse {name} {value}', file=sys.stderr)
+                    continue
+                except RecursionError:
+                    continue
             if new_value is not None and new_value != value:
                 macros[name] = new_value
                 values_changed = True
@@ -64,23 +71,26 @@ def guess_type(cdefs: list) -> str:
     :return: C integer type
     :rtype str
     """
-    min_value = min(cdefs).value
-    max_value = max(cdefs).value
-    max_bits = max(max_value.bit_length(), min_value.bit_length())
-    
-    # signed need one more bit
-    if min_value < 0: 
-        max_bits += 1
-    
-    possible_sizes = [8, 16, 32, 64, 128]
-    chosen_size = 0
-    for size in possible_sizes:
-        if max_bits <= size:
-            chosen_size = size
-            break
-    if chosen_size == 0:
+    try:
+        min_value = min(cdefs).value
+        max_value = max(cdefs).value
+        max_bits = max(max_value.bit_length(), min_value.bit_length())
+        
+        # signed need one more bit
+        if min_value < 0: 
+            max_bits += 1
+        
+        possible_sizes = [8, 16, 32, 64, 128]
+        chosen_size = 0
+        for size in possible_sizes:
+            if max_bits <= size:
+                chosen_size = size
+                break
+        if chosen_size == 0:
+            return None
+        return f'{"u" if min_value > 0 else ""}int{chosen_size}_t'
+    except:
         return None
-    return f'{"u" if min_value > 0 else ""}int{chosen_size}_t'
 
 
 def hack_fix_hex_values(macros: dict) -> dict:

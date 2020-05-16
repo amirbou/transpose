@@ -24,7 +24,7 @@ def _main():
     parser.add_argument('--max-headers', dest='max_headers', default=DEFAULT_MAX_HEADERS, type=int,
                         help=f'maximum number of headers to parse in recursion mode ({DEFAULT_MAX_HEADERS} by default)', metavar='n')
     parser.add_argument('-f,--force', action='store_true', dest='force', help='overwrite existing out_path')
-    parser.add_argument('--mask', metavar='parser', nargs='*', help='create a mask parser for the given parser (use \'all\' to create for all parsers)')
+    parser.add_argument('--mask', metavar='parser', nargs='*', default=[], help='create a mask parser for the given parser (use \'all\' to create for all parsers)')
     output_group = parser.add_mutually_exclusive_group()
     output_group.add_argument('-o', help='output file', dest='out_file', nargs='?', default='-', metavar='output file')
     output_group.add_argument('--dry-run', action='store_true', dest='dry_run', help='only list the parsers to be created')

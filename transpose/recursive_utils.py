@@ -26,8 +26,16 @@ class RecursiveUtil:
         """
         self.base_header = base_header
         self.parse_std = parse_std
-        self.include_dirs = self.get_include_dirs(compiler, include_dirs)
+        self.compiler = compiler
+        self.include_dirs = include_dirs
         self.max_headers = max_headers
+
+    @staticmethod
+    def include_dir_to_args(include_dirs: list) -> list:
+        """
+        Converts list of include direcories, to list of argumenets to the compiler including said directories
+        """
+        return [f'-I{include_dir}' for include_dir in include_dirs]
 
     @staticmethod
     def get_include_dirs(compiler: str, include_dirs: list):
@@ -37,10 +45,8 @@ class RecursiveUtil:
         :param include_dirs: list of -I dir to add to the search
         :return: ordered list of include search paths
         """
-        include = []
-        for include_dir in include_dirs:
-            include.append('-I')
-            include.append(include_dir)
+        include = RecursiveUtil.include_dir_to_args(include_dirs)
+
         args = [compiler, '-Wp,-v', '-xc', '-', '-fsyntax-only'] + include
         output = subprocess.run(args, capture_output=True, input=b'').stderr.decode('utf-8')
         lines = output.splitlines()
@@ -50,77 +56,31 @@ class RecursiveUtil:
         final_include = lines[local_index+1:global_index] + lines[global_index+1:end_index]
         return [os.path.realpath(include_dir.strip()) for include_dir in final_include]
 
-    def find_header(self, header: str):
-        """
-        Search for a header in the include_dirs
-        :param header: header name
-        :return: the full path to the header, None if header was not found
-        :rtype: str
-        """
-        try:
-            return pyclibrary.utils.find_header(header, dirs=self.include_dirs)
-        except OSError:
-            return None
-
-    def extract_dependencies(self, header: str):
-        """
-        Extract a list of headers our header depends on
-        :param header: name of the header
-        :return: list of headers
-        :rtype: list
-        """
-        path = self.find_header(header)
-        if not path:
-            raise ValueError(f'Header {header} not found in include directories')
-        with open(path, 'r') as reader:
-            header_data = reader.read()
-        lines = header_data.splitlines()
-        included_headers = []
-        for line in lines:
-            match = self.REGEX_LOCAL.match(line)
-            if not match and self.parse_std:
-                match = self.REGEX_GLOBAL.match(line)
-            if match:
-                included_headers.append(match.group(1))
-        return included_headers
-
-    def build_dependencies_graph(self):
-        """
-        Generates the dependencies graph of the base header
-        :return The dependencies graph
-        :rtype: nx.DiGraph
-        """
-        new_nodes = True
-        graph = nx.DiGraph()
-        graph.add_node(self.base_header)
-        parsed_headers = []
-        while new_nodes:
-            new_nodes = False
-            if len(graph) > self.max_headers:
-                raise ValueError(f'Needed headers surpasses the maximum allowed ({self.max_headers})')
-            graph_nodes = graph.copy().nodes
-            for current_header in graph_nodes:
-                if current_header in parsed_headers:
-                    continue
-                headers = self.extract_dependencies(current_header)
-                for header in headers:
-                    if header not in graph:
-                        new_nodes = True
-                        header_full_path = self.find_header(header)
-                        graph.add_node(header_full_path)
-                        graph.add_edge(current_header, header_full_path)
-                parsed_headers.append(current_header)
-        return graph
-
     def create_header_traversal_list(self):
         """
         Create an ordered list of headers to traverse to meet all the dependencies of self.base_header
         :return: list of headers
         :rtype: list
         """
-        graph = self.build_dependencies_graph()
-        try:
-            traversal_list = list(nx.algorithms.dag.topological_sort(graph))[::-1]
-        except nx.NetworkXUnfeasible:
-            raise ValueError("Dependencies graph contains cycles")
-        return traversal_list
+        traversal_list = []
+        args = [compiler, '-H', self.base_header] + self.get_include_dirs(self.compiler, self.include_dirs)
+        output = subprocess.run(args, capture_output=True).stderr.decode('utf-8')
+        lines = output.splitlines()
+        for line in lines:
+            try:
+                depth = line[:line.index(' ')].count('.')
+                path = line[line.index(' ') + 1:]
+                if depth == 0 or not os.path.exists(path):
+                    continue
+                traversal_list.append(os.path.abspath(path))
+            except ValueError:
+                continue
+        if self.parse_std:
+            return traversal_list
+        clean_traversal_list = []
+        for header in traversal_list:
+            for d in [os.path.abspath(d) for d in self.include_dirs]:
+                if os.path.basename(header) in os.listdir(d):
+                    clean_traversal_list.append(header)
+                    break
+        return clean_traversal_list
