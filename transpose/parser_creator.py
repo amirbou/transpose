@@ -5,29 +5,42 @@ import sys
 
 @dataclass
 class CDefinition:
+    """
+    Basic class holding C definition (macro or enum) name and value
+    Comparisions are done by value
+    """
     name: str
     value: Any
 
     def __eq__(self, other):
-        """
-        compares two CDefs by value.
-        :param other: other CDef
-        :return: True iff self and other have the same value
-        :rtype: bool
-        """
-        if self.value == other.value:
-            return True
+        return self.value == other.value
+
+    def __lt__(self, other):
+        return self.value < other.value
+
+    def __gt__(self, other):
+        return self.value > other.value
+    
+    def __le__(self, other):
+        return self == other or self < other
+    
+    def __ge__(self, other):
+        return self == other or self > other
+    
+    def __ne__(self, other):
+        return not self == other
 
 
 class ParserCreator:
     """
     class holding an macro name, and a list of its CDefinitions
     """
-    def __init__(self, name: str, cdefs: list, inline_type = None, verbose = False):
+    verbose = False
+    masks = []
+    def __init__(self, name: str, cdefs: list, inline_type = None,):
         self.name = name
         self.cdefs = cdefs
         self.inline_type = inline_type
-        self.verbose = verbose
 
     def _log(self, message):
         if self.verbose:
@@ -68,7 +81,7 @@ class ParserCreator:
         :return: string defining parser macros / function
         :rtype: str
         """
-        if self.inline_type:
+        if self.inline_type is not None:
             return self._create_inline_function()
         return self._create_macro()
 
@@ -84,6 +97,8 @@ class ParserCreator:
         merged = self._merge_cdefs()
         if merged is None or len(merged) == 0:
             return ""
+        
+        macro_name = f'{self.name.upper()}_PARSER'
         max_length = max([len(name) + 1 for name in merged.keys()])
         max_length = max(max_length, len('Unknown') + 1)
         max_length_macro = f"#define {self.name.upper()}_MAX_LEN ({max_length})"
@@ -103,7 +118,9 @@ class ParserCreator:
         final_macro = '\n'.join([line + '\\' for line in macro.splitlines()[:-1]])
         final_macro += '\n' + macro.splitlines()[-1]
         self._log(f'Created macro: {self.name.upper()}_MAX_LEN ({max_length})')
-        self._log(f'Created macro: {self.name.upper()}_PARSER(n, buf)')
+        self._log(f'Created macro: {macro_name}(n, buf)')
+        if 'all' in self.masks or macro_name in self.masks:
+            mask_parser = ''
         return max_length_macro + '\n' + final_macro
 
     def _create_inline_function(self):
@@ -129,3 +146,6 @@ class ParserCreator:
 }"""
         self._log(f'Created inline function: {self.name.lower()}_parser({self.inline_type} n)')
         return function
+    
+    def _create_mask_parser(self):
+        pass

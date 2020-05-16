@@ -1,5 +1,6 @@
 #pragma once
 #include <string.h>
+#include <stdint.h>
 #include "test.h"
 
 
@@ -51,54 +52,39 @@ static inline const char * log_id_parser(enum log_id n) {
 }
 
 
-#define DF_MAX_LEN (14)
-#define DF_PARSER(n, buf) do {\
-    switch(n) {\
-    case DF_ORIGIN:\
-            strcpy(buf, "DF_ORIGIN");\
-            break;\
-    case DF_SYMBOLIC:\
-            strcpy(buf, "DF_SYMBOLIC");\
-            break;\
-    case DF_TEXTREL:\
-            strcpy(buf, "DF_TEXTREL");\
-            break;\
-    case DF_BIND_NOW:\
-            strcpy(buf, "DF_BIND_NOW");\
-            break;\
-    case DF_STATIC_TLS:\
-            strcpy(buf, "DF_STATIC_TLS");\
-            break;\
-    default:\
-            strcpy(buf, "Unknown");\
-            break;\
-    }\
-} while (0);
+static inline const char * df_parser(uint8_t n) {
+    switch(n) {
+    case DF_ORIGIN:
+        return "DF_ORIGIN";
+    case DF_SYMBOLIC:
+        return "DF_SYMBOLIC";
+    case DF_TEXTREL:
+        return "DF_TEXTREL";
+    case DF_BIND_NOW:
+        return "DF_BIND_NOW";
+    case DF_STATIC_TLS:
+        return "DF_STATIC_TLS";
+    default:
+        return "Unknown";
+    }
+}
 
 
-#define DF_1_MAX_LEN (15)
-#define DF_1_PARSER(n, buf) do {\
-    switch(n) {\
-    case DF_1_NOW:\
-            strcpy(buf, "DF_1_NOW");\
-            break;\
-    case DF_1_GLOBAL:\
-            strcpy(buf, "DF_1_GLOBAL");\
-            break;\
-    case DF_1_GROUP:\
-            strcpy(buf, "DF_1_GROUP");\
-            break;\
-    case DF_1_NODELETE:\
-            strcpy(buf, "DF_1_NODELETE");\
-            break;\
-    case DF_1_LOADFLTR:\
-            strcpy(buf, "DF_1_LOADFLTR");\
-            break;\
-    case DF_1_INITFIRST:\
-            strcpy(buf, "DF_1_INITFIRST");\
-            break;\
-    default:\
-            strcpy(buf, "Unknown");\
-            break;\
-    }\
-} while (0);
+static inline const char * df_1_parser(uint8_t n) {
+    switch(n) {
+    case DF_1_NOW:
+        return "DF_1_NOW";
+    case DF_1_GLOBAL:
+        return "DF_1_GLOBAL";
+    case DF_1_GROUP:
+        return "DF_1_GROUP";
+    case DF_1_NODELETE:
+        return "DF_1_NODELETE";
+    case DF_1_LOADFLTR:
+        return "DF_1_LOADFLTR";
+    case DF_1_INITFIRST:
+        return "DF_1_INITFIRST";
+    default:
+        return "Unknown";
+    }
+}

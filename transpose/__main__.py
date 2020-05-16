@@ -3,6 +3,7 @@
 import argparse
 from .transpose import main
 import os, sys
+from .parser_creator import ParserCreator
 
 DEFAULT_MAX_HEADERS = 20
 
@@ -23,11 +24,11 @@ def _main():
     parser.add_argument('--max-headers', dest='max_headers', default=DEFAULT_MAX_HEADERS, type=int,
                         help=f'maximum number of headers to parse in recursion mode ({DEFAULT_MAX_HEADERS} by default)', metavar='n')
     parser.add_argument('-f,--force', action='store_true', dest='force', help='overwrite existing out_path')
-    # parser.add_argument('--mask', action='append', default=[], metavar='parser', help='create a mask parser for the given parser')
+    parser.add_argument('--mask', metavar='parser', nargs='*', help='create a mask parser for the given parser (use \'all\' to create for all parsers)')
     output_group = parser.add_mutually_exclusive_group()
     output_group.add_argument('-o', help='output file', dest='out_file', nargs='?', default='-', metavar='output file')
     output_group.add_argument('--dry-run', action='store_true', dest='dry_run', help='only list the parsers to be created')
-    output_group.add_argument('--brave', action='store_true', dest='is_brave', help=argparse.SUPPRESS)
+    output_group.add_argument('--brave', action='store_true', dest='is_brave', help='bravely print output to shell')
     parser.set_defaults(force=False)
     try:
         import argcomplete
@@ -45,6 +46,9 @@ def _main():
     if not args.dry_run and args.out_file == '-' and sys.stdout.isatty() and not args.is_brave:
         print('Error: cowardly refusing to print to shell (use --brave if necessary)', file=sys.stderr)
         return -1
+    
+    ParserCreator.verbose = args.dry_run
+    ParserCreator.masks = args.mask
     return main(args.in_file,
                 args.out_file,
                 args.D,

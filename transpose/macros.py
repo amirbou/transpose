@@ -14,14 +14,12 @@ class Define(CDefinition):
         """
         casts value from string to integer, might raise ValueError
         """
-        self.name = name
-        if isinstance(value, (int, float)):
-            self.value = value
-        else:
-            self.value = int(value, 0)
+        if not isinstance(value, (int, float)):
+            value = int(value, 0)
+        super().__init__(name, value)
 
 
-def strip_underscore(st: str):
+def strip_underscore(st: str) -> str:
     """
     Removes _* suffix from st
     :param st: string
@@ -31,7 +29,7 @@ def strip_underscore(st: str):
     return st[:st.rindex('_')]
 
 
-def parse_macros_values(macros: dict):
+def parse_macros_values(macros: dict) -> dict:
     """
     Arithmetically parse the values of integral (and floating point) macros, in order to help creating a one to one
     mapping from values to names
@@ -39,6 +37,7 @@ def parse_macros_values(macros: dict):
     :return: the macros dictionary, after parsing the values (in place)
     :rtype: dict
     """
+    hack_fix_hex_values(macros)
     values_changed = True
     arithmetic_parser = MacrosArithmeticParser()
     while values_changed:
@@ -58,7 +57,33 @@ def parse_macros_values(macros: dict):
     return macros
 
 
-def hack_fix_hex_values(macros: dict):
+def guess_type(cdefs: list) -> str:
+    """
+    Try to guess C type that would fit the macros values
+    :param cdefs: list of CDefinitions
+    :return: C integer type
+    :rtype str
+    """
+    min_value = min(cdefs).value
+    max_value = max(cdefs).value
+    max_bits = max(max_value.bit_length(), min_value.bit_length())
+    
+    # signed need one more bit
+    if min_value < 0: 
+        max_bits += 1
+    
+    possible_sizes = [8, 16, 32, 64, 128]
+    chosen_size = 0
+    for size in possible_sizes:
+        if max_bits <= size:
+            chosen_size = size
+            break
+    if chosen_size == 0:
+        return None
+    return f'{"u" if min_value > 0 else ""}int{chosen_size}_t'
+
+
+def hack_fix_hex_values(macros: dict) -> dict:
     """
     iterate through macros and replace hex values from "0xabc" to "0x'abc'".
     this is a dirty hack so the arithmetic parser for the 0x operator created will receive the number unparsed,
@@ -69,9 +94,9 @@ def hack_fix_hex_values(macros: dict):
     """
     for name, value in macros.items():
         macros[name] = HEX_REGEX.sub(r"0x'\1'", value)
+    return macros
 
-
-def merge_prefixes(prefixes_dict: dict):
+def merge_prefixes(prefixes_dict: dict) -> dict:
     """
     Tries to merge prefixes in which one is a prefix of the other, and their values are disjoint
     :param prefixes_dict: dictionary where [prefix: str] = list of Define's with prefixed names
@@ -101,7 +126,7 @@ def merge_prefixes(prefixes_dict: dict):
     return prefixes_dict
 
 
-def find_prefixes(defines: list):
+def find_prefixes(defines: list) -> (dict, list):
     """
     Finds all prefixes that more then 2 defines share, and the associated strings. All strings that don't share a prefix
     with anything else, are returned as a list.
@@ -138,11 +163,12 @@ def find_prefixes(defines: list):
     return prefixes_count, no_prefix
 
 
-def split_default_parser(defines: list):
+def split_default_parser(defines: list) -> list:
     """
     Split the defines without a prefix to different parsers, to preserve one to one correspondents
     :param defines: list of Define's that hadn't fit in one of the specific parsers
     :return: list of lists of uniquely valued defines
+    :rtype: list
     """
     split_parsers = list()
     for define in defines:
@@ -164,7 +190,7 @@ def split_default_parser(defines: list):
     return split_parsers
 
 
-def create_define_macros(original_macros: dict, verbose = True):
+def create_define_macros(original_macros: dict) -> list:
     """
     Parses defines, groups them by prefix, and creates matching macros.
     :param original_macros: dictionary of macros and their values
@@ -172,7 +198,6 @@ def create_define_macros(original_macros: dict, verbose = True):
     :return: list of created macros, and dict of parsed macros
     :rtype: list
     """
-    hack_fix_hex_values(original_macros)
     parse_macros_values(original_macros)
 
     defines = list()
@@ -185,14 +210,15 @@ def create_define_macros(original_macros: dict, verbose = True):
     prefixes, no_prefix = find_prefixes(defines)
     prefixes = merge_prefixes(prefixes)
     macros = []
+
     for prefix in prefixes:
-        macros.append(ParserCreator(prefix, prefixes[prefix], verbose=verbose).create_parser())
+        macros.append(ParserCreator(prefix, prefixes[prefix], guess_type(prefixes[prefix])).create_parser())
 
     split_default_parsers = split_default_parser(no_prefix)
     if len(split_default_parsers) == 1:
-        macros.append(ParserCreator(f'_DEFAULT', no_prefix, verbose=verbose).create_parser())
+        macros.append(ParserCreator(f'_DEFAULT', no_prefix, guess_type(no_prefix)).create_parser())
     else:
         for i in range(len(split_default_parsers)):
-            macros.append(ParserCreator(f'_DEFAULT_{i}', split_default_parsers[i], verbose=verbose).create_parser())
+            macros.append(ParserCreator(f'_DEFAULT_{i}', split_default_parsers[i], guess_type(split_default_parsers[i])).create_parser())
     return macros
 

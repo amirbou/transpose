@@ -8,9 +8,12 @@ SYSTEM_TEST_PATH = os.path.join('tests', 'system_test')
 
 
 def do_transpose(path, verbose = False):
+
     parser = CParser([path])
-    enum_macros = create_enum_macros(parser.defs['enums'], verbose=verbose)
-    define_macros = create_define_macros(parser.defs['macros'], verbose=verbose)
+    ParserCreator.verbose = verbose
+    enum_macros = create_enum_macros(parser.defs['enums'])
+    define_macros = create_define_macros(parser.defs['macros'])
+    ParserCreator.verbose = False
     return create_output(os.path.basename(path), enum_macros, define_macros)
 
 
@@ -49,10 +52,8 @@ def test_in_c(tmpdir):
 def test_list(capsys):
     expected = """Created inline function: logpriority_parser(enum LogPriority n)
 Created inline function: log_id_parser(enum log_id n)
-Created macro: DF_MAX_LEN (14)
-Created macro: DF_PARSER(n, buf)
-Created macro: DF_1_MAX_LEN (15)
-Created macro: DF_1_PARSER(n, buf)
+Created inline function: df_parser(uint8_t n)
+Created inline function: df_1_parser(uint8_t n)
 """
 
     do_transpose(os.path.join(SYSTEM_TEST_PATH, 'test.h'), verbose=True)
