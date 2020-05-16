@@ -63,24 +63,12 @@ class RecursiveUtil:
         :rtype: list
         """
         traversal_list = []
-        args = [compiler, '-H', self.base_header] + self.get_include_dirs(self.compiler, self.include_dirs)
-        output = subprocess.run(args, capture_output=True).stderr.decode('utf-8')
-        lines = output.splitlines()
-        for line in lines:
-            try:
-                depth = line[:line.index(' ')].count('.')
-                path = line[line.index(' ') + 1:]
-                if depth == 0 or not os.path.exists(path):
-                    continue
-                traversal_list.append(os.path.abspath(path))
-            except ValueError:
-                continue
-        if self.parse_std:
-            return traversal_list
-        clean_traversal_list = []
-        for header in traversal_list:
-            for d in [os.path.abspath(d) for d in self.include_dirs]:
-                if os.path.basename(header) in os.listdir(d):
-                    clean_traversal_list.append(header)
-                    break
-        return clean_traversal_list
+        flag = '-M'
+        if not self.parse_std:
+            flag = '-MM'
+        args = [compiler, flag, self.base_header] + self.include_dir_to_args(self.include_dirs)
+        output = subprocess.run(args, capture_output=True).stdout.decode('utf-8')
+        output = output.split(':')[1] # remove 'objfile.o:'
+        output = output.replace('\\', ' ')
+        return [os.path.abspath(path) for path in output.split()]
+        

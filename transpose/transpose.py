@@ -83,11 +83,8 @@ def main(path: str,
                 raise ValueError(f'include dir {include_dir} does not exist')
 
         if recursive:
-            # traversal_list = RecursiveUtil(path, parse_std, include_dirs, compiler, max_headers).create_header_traversal_list()
-            # output = transpose_files(traversal_list, macros_dict)
-            with tempfile.NamedTemporaryFile() as fd:
-                fd.write(subprocess.run([compiler, '-dM', '-E', path], capture_output=True).stdout)
-                output = transpose_files([fd.name, ], macros_dict)
+            traversal_list = RecursiveUtil(path, parse_std, include_dirs, compiler, max_headers).create_header_traversal_list()
+            output = transpose_files(traversal_list, macros_dict)
         else:
             output = transpose_files([path, ], macros_dict)
         
