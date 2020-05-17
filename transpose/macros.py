@@ -16,7 +16,7 @@ class Define(CDefinition):
         """
         casts value from string to integer, might raise ValueError
         """
-        if not isinstance(value, (int, float)):
+        if not isinstance(value, int):
             value = int(value, 0)
         super().__init__(name, value)
 
@@ -33,7 +33,7 @@ def strip_underscore(st: str) -> str:
 
 def parse_macros_values(macros: dict) -> dict:
     """
-    Arithmetically parse the values of integral (and floating point) macros, in order to help creating a one to one
+    Arithmetically parse the values of integral macros, in order to help creating a one to one
     mapping from values to names
     :param macros: dictionary of unparsed macros
     :return: the macros dictionary, after parsing the values (in place)
@@ -46,7 +46,7 @@ def parse_macros_values(macros: dict) -> dict:
         values_changed = False
         for name, value in macros.items():
             new_value = None
-            if value and not isinstance(value, (int, float)):
+            if value and not isinstance(value, int):
                 try:
                     result = arithmetic_parser.parse(value)
                     new_value = result.evaluate()
