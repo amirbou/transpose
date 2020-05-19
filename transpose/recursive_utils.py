@@ -3,6 +3,7 @@ import subprocess
 import networkx as nx
 import pyclibrary
 import re
+import sys
 
 
 class RecursiveUtil:
@@ -49,7 +50,7 @@ class RecursiveUtil:
         flag = '-M'
         if not self.parse_std:
             flag = '-MM'
-        args = [compiler, flag, self.base_header] + self.include_dir_to_args() + self.macros_to_args()
+        args = [self.compiler, flag, self.base_header] + self.include_dir_to_args() + self.macros_to_args()
         output = subprocess.run(args, capture_output=True).stdout.decode('utf-8')
         output = output.split(':')[1] # remove 'objfile.o:'
         output = output.replace('\\', ' ')
@@ -57,6 +58,6 @@ class RecursiveUtil:
         if len(traversal_list) > self.max_headers:
             print(f'Warning: required headers {len(traversal_list)} are more the max allowed ({self.max_headers}).', file=sys.stderr)
             print('Truncating required headers')
-            traversal_list = traversal_list[:self.max_headers]
+            traversal_list = traversal_list[-self.max_headers:]
         return traversal_list
         

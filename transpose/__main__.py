@@ -4,8 +4,9 @@ import argparse
 from .transpose import main
 import os, sys
 from .parser_creator import ParserCreator
+import warnings
 
-DEFAULT_MAX_HEADERS = 20
+DEFAULT_MAX_HEADERS = 5
 
 
 def _main():
@@ -63,5 +64,10 @@ def _main():
 
 
 if __name__ == '__main__':
-    sys.exit(_main())
-
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter('always')
+    # sys.exit(_main())
+    _main()
+    import pdb 
+    pdb.set_trace()
+    print(w)

@@ -12,6 +12,5 @@ setup(
     author='amirbou',
     install_requires=['pyclibrary',
                       'plusminus',
-                      'networkx'
                       ]
 )

@@ -106,7 +106,7 @@ def test_parse_macros_values():
     subject = {
         'A': '0x1',
         'B': '0x2',
-        'C': '0x4',
+        'C': '0x1 | 0x2',
         'D': '0x0ff00000',
         'E': '0xf0000000',
         'F': '10',
@@ -127,7 +127,7 @@ def test_parse_macros_values():
     expected = {
         'A': 0x1,
         'B': 0x2,
-        'C': 0x4,
+        'C': 0x1 | 0x2,
         'D': 0x0ff00000,
         'E': 0xf0000000,
         'F': 10,

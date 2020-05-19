@@ -81,12 +81,18 @@ class ParserCreator:
         :return: string defining parser macros / function
         :rtype: str
         """
+        merged = self._merge_cdefs()
+        if merged is None or len(merged) == 0:
+            return ''
         if self.inline_type is not None:
-            return self._create_inline_function()
-        return self._create_macro()
+            function = self._create_inline_function(merged)
+            if self.name in self.masks:
+                function += '\n' + self._create_mask_parser(merged)
+            return function            
+        return self._create_macro(merged)
 
 
-    def _create_macro(self):
+    def _create_macro(self, merged):
         """
         creates 2 C macros:
             self.name_MAX_LEN - holding the max length of the names returned
@@ -94,27 +100,24 @@ class ParserCreator:
         :return: string defining the macros
         :rtype: str
         """
-        merged = self._merge_cdefs()
-        if merged is None or len(merged) == 0:
-            return ""
         
         macro_name = f'{self.name.upper()}_PARSER'
         max_length = max([len(name) + 1 for name in merged.keys()])
         max_length = max(max_length, len('Unknown') + 1)
-        max_length_macro = f"#define {self.name.upper()}_MAX_LEN ({max_length})"
-        macro = f"""#define {self.name.upper()}_PARSER(n, buf) do {{
-    switch(n) {{"""
+        max_length_macro = f'#define {self.name.upper()}_MAX_LEN ({max_length})'
+        macro = f'''#define {self.name.upper()}_PARSER(n, buf) do {{
+    switch(n) {{'''
         for name in merged:
-            macro += f"""
+            macro += f'''
     case {merged[name].name}:
-            strcpy(buf, \"{name}\");
-            break;"""
-        macro += """
+            strcpy(buf, "{name}");
+            break;'''
+        macro += '''
     default:
-            strcpy(buf, \"Unknown\");
+            strcpy(buf, "Unknown");
             break;
     }
-} while (0);"""
+} while (0);'''
         final_macro = '\n'.join([line + '\\' for line in macro.splitlines()[:-1]])
         final_macro += '\n' + macro.splitlines()[-1]
         self._log(f'Created macro: {self.name.upper()}_MAX_LEN ({max_length})')
@@ -123,29 +126,50 @@ class ParserCreator:
             mask_parser = ''
         return max_length_macro + '\n' + final_macro
 
-    def _create_inline_function(self):
+    def _create_inline_function(self, merged):
         """
         Creates an inline function, taking argument of type self.inline_type and returning a pointer to 'const char *'
         the function will be named 'self.name_parser'
         :return: string defining the inline function
         :rtype: str
         """
-        merged = self._merge_cdefs()
-        if merged is None or len(merged) == 0:
-            return ""
-        function = f"""static inline const char * {self.name.lower()}_parser({self.inline_type} n) {{
-    switch(n) {{"""
+        function = f'''static inline const char * {self.name.lower()}_parser({self.inline_type} n) {{
+    switch(n) {{'''
         for name in merged:
-            function += f"""
+            function += f'''
     case {merged[name].name}:
-        return \"{name}\";"""
-        function += """
+        return "{name}";'''
+        function += '''
     default:
-        return \"Unknown\";
+        return "Unknown";
     }
-}"""
+}'''
         self._log(f'Created inline function: {self.name.lower()}_parser({self.inline_type} n)')
         return function
     
-    def _create_mask_parser(self):
-        pass
+    def _create_mask_parser(self, merged):
+        static_buffer_len = len(' | ') * (len(merged.keys()) - 1) + sum([len(name) for name in merged.keys()]) + 1
+        value_count = len(merged.keys())
+        mask = f'''static inline const char * {self.name.lower()}_mask_parser({self.inline_type} n) {{
+    static char buffer[{static_buffer_len}] = {{ 0 }};
+    memset(buffer, 0, sizeof(buffer));
+    int i = 0;'''
+
+        i = 1
+        for name in merged:
+            if i != value_count:
+                string_to_add = name + ' | '
+            else:
+                string_to_add = name
+            mask += f'''
+    if (n & {merged[name].name}) {{
+        memcpy(buffer + i, {string_to_add}, {len(string_to_add)});
+        i += {len(string_to_add)};
+    }}'''
+            i += 1
+        mask += f'''
+    else if (i > 0){{
+        buffer[i - {len(' | ')}] = 0;
+    }}
+    return buffer;'''
+        return mask
