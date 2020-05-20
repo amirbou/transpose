@@ -35,11 +35,12 @@ def transpose_files(paths: list, macros: dict):
     :return: transposed header file content and dictionary of parsed macros
     :rtype: str
     """
-    parser = CParser(paths, macros=macros)
+    print(paths, file=sys.stderr)
+    parser = CParser(paths[::-1], macros=macros)
     enum_macros = create_enum_macros(parser.defs['enums'])
     define_macros = create_define_macros(parser.defs['macros'])
 
-    path = paths[-1]  # only the last header is needed to be included, as it will #include all the others
+    path = paths[0]  # only the first header is needed to be included, as it will #include all the others
     return create_output(os.path.basename(path), enum_macros, define_macros)
 
 

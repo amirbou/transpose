@@ -86,11 +86,10 @@ class ParserCreator:
             return ''
         if self.inline_type is not None:
             function = self._create_inline_function(merged)
-            if self.name in self.masks:
+            if self._create_inline_function_name() in self.masks:
                 function += '\n' + self._create_mask_parser(merged)
             return function            
         return self._create_macro(merged)
-
 
     def _create_macro(self, merged):
         """
@@ -126,6 +125,9 @@ class ParserCreator:
             mask_parser = ''
         return max_length_macro + '\n' + final_macro
 
+    def _create_inline_function_name(self):
+        return self.name.lower() + '_parser'
+
     def _create_inline_function(self, merged):
         """
         Creates an inline function, taking argument of type self.inline_type and returning a pointer to 'const char *'
@@ -133,7 +135,7 @@ class ParserCreator:
         :return: string defining the inline function
         :rtype: str
         """
-        function = f'''static inline const char * {self.name.lower()}_parser({self.inline_type} n) {{
+        function = f'''static inline const char * {self._create_inline_function_name()}({self.inline_type} n) {{
     switch(n) {{'''
         for name in merged:
             function += f'''
@@ -158,18 +160,20 @@ class ParserCreator:
         i = 1
         for name in merged:
             if i != value_count:
-                string_to_add = name + ' | '
+                string_to_add = f'"{name} | "'
             else:
-                string_to_add = name
+                string_to_add = f'"{name}"'
+            string_len = len(string_to_add) - 2 # subtract 2 from memcpy size to account for the ""
             mask += f'''
     if (n & {merged[name].name}) {{
-        memcpy(buffer + i, {string_to_add}, {len(string_to_add)});
-        i += {len(string_to_add)};
+        memcpy(buffer + i, {string_to_add}, {string_len});
+        i += {string_len};
     }}'''
             i += 1
         mask += f'''
     else if (i > 0){{
         buffer[i - {len(' | ')}] = 0;
     }}
-    return buffer;'''
+    return buffer;
+}}'''
         return mask
